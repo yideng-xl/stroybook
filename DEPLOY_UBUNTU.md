@@ -36,7 +36,7 @@ mvn -version
 
 ### 1.5 安装 PostgreSQL (数据库)
 ```bash
-sudo apt install -y postgresql postgresql-contrib
+sudo apt install -y postgresql-17 postgresql-contrib-17
 
 # 启动服务
 sudo systemctl start postgresql
