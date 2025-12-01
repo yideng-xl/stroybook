@@ -38,14 +38,14 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
   }, []);
 
   // Calculate book dimensions
-  const width = 500;
+  const width = 1000;
   const height = 700;
 
   return (
     <div className="relative flex items-center justify-center h-full w-full">
       
       {/* Prev Button */}
-      <button onClick={prevFlip} className="absolute left-4 md:left-10 z-40 bg-yellow-400 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border-4 border-white text-white hover:bg-yellow-300 shadow-lg transition-transform active:scale-95">
+      <button onClick={prevFlip} className="hidden absolute left-4 md:left-10 z-40 bg-yellow-400 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border-4 border-white text-white hover:bg-yellow-300 shadow-lg transition-transform active:scale-95">
         <ArrowLeft strokeWidth={3} />
       </button>
 
@@ -57,7 +57,7 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
             height={height} 
             size="fixed"
             minWidth={300}
-            maxWidth={600}
+            maxWidth={1200}
             minHeight={400}
             maxHeight={800}
             showCover={true}
@@ -78,43 +78,44 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
                 </div>
             </Page>
 
-            {/* Content Pages: Top Image, Bottom Text */}
+            {/* Content Pages: Left Image, Right Text (Side-by-Side) */}
             {story.pages.map((page, index) => (
                 <Page key={index} number={(index + 1).toString()}>
-                    <div className="h-full flex flex-col relative">
-                        {/* Top: Image (60%) */}
-                        <div className="h-[60%] p-4 bg-white flex items-center justify-center border-b-4 border-amber-100 border-dashed">
-                             <div className="w-full h-full rounded-lg overflow-hidden shadow-inner">
+                    <div className="h-full flex flex-row relative">
+                        {/* Left: Image (50%) */}
+                        <div className="w-1/2 h-full p-1 bg-white flex items-center justify-center border-r-4 border-amber-100 border-dashed relative">
+                             <div className="w-full h-full rounded-lg overflow-hidden shadow-inner flex items-center justify-center">
                                 <img 
                                     src={getImagePath(index)} 
                                     alt={`Page ${page.pageNumber}`} 
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                                    className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-700"
                                     loading="lazy"
                                 />
                              </div>
+                             {/* Page Number (Left Bottom Center) */}
+                             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 font-bold text-lg">{index + 1}</div>
                         </div>
 
-                        {/* Bottom: Text (40%) */}
-                        <div className="h-[40%] p-6 md:p-8 flex flex-col items-center overflow-y-auto scrollbar-hide bg-[#FFFBF0]">
-                            {/* Page Number */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-gray-400 font-bold text-xs">{index + 1}</div>
+                        {/* Right: Text (50%) */}
+                        <div className="w-1/2 h-full p-4 md:p-6 flex flex-col overflow-y-auto bg-[#FFFBF0] scrollbar-thin scrollbar-thumb-amber-200 scrollbar-track-transparent">
+                            <div className="my-auto w-full flex flex-col items-center">
+                                {/* ZH Text */}
+                                {(langMode === 'zh' || langMode === 'dual') && (
+                                    <p className="font-serif text-gray-800 text-lg md:text-xl leading-relaxed text-left w-full mb-6">
+                                        {page.textZh}
+                                    </p>
+                                )}
 
-                            {/* ZH Text */}
-                            {(langMode === 'zh' || langMode === 'dual') && (
-                                <p className="font-serif text-gray-800 text-lg md:text-xl leading-relaxed text-center mb-4">
-                                    {page.textZh}
-                                </p>
-                            )}
+                                {/* Divider */}
+                                {langMode === 'dual' && <div className="w-full h-px bg-amber-200 mb-6 shrink-0"></div>}
 
-                            {/* Divider */}
-                            {langMode === 'dual' && <div className="w-12 h-1 bg-amber-200 rounded-full mb-4 shrink-0"></div>}
-
-                            {/* EN Text */}
-                            {(langMode === 'en' || langMode === 'dual') && (
-                                <p className="font-sans text-gray-600 text-base italic leading-relaxed text-center">
-                                    {page.textEn}
-                                </p>
-                            )}
+                                {/* EN Text */}
+                                {(langMode === 'en' || langMode === 'dual') && (
+                                    <p className="font-sans text-gray-600 text-base italic leading-relaxed text-left w-full">
+                                        {page.textEn}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </Page>
@@ -133,7 +134,7 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
       </div>
 
       {/* Next Button */}
-      <button onClick={nextFlip} className="absolute right-4 md:right-10 z-40 bg-green-400 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border-4 border-white text-white hover:bg-green-300 shadow-lg transition-transform active:scale-95">
+      <button onClick={nextFlip} className="hidden absolute right-4 md:right-10 z-40 bg-green-400 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border-4 border-white text-white hover:bg-green-300 shadow-lg transition-transform active:scale-95">
         <ArrowRight strokeWidth={3} />
       </button>
 

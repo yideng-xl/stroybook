@@ -22,7 +22,7 @@ const ReadPage: React.FC = () => {
   const { manifest } = useStoryManifest();
   
   // 3. State Management
-  const [langMode, setLangMode] = useState<LanguageMode>('dual');
+  const [langMode, setLangMode] = useState<LanguageMode>('zh');
   const [currentStyle, setCurrentStyle] = useState<string>('');
   
   // 4. Responsive Check
