@@ -34,9 +34,23 @@ sudo apt install -y maven
 mvn -version
 ```
 
-### 1.5 安装 PostgreSQL (数据库)
+### 1.5 安装 PostgreSQL 17 (数据库)
+由于 Ubuntu 默认源可能不包含最新的 v17，需添加官方仓库：
+
 ```bash
+# 1. 安装必要的工具
+sudo apt install -y curl ca-certificates gnupg lsb-release
+
+# 2. 导入 PostgreSQL 官方仓库密钥
+curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+
+# 3. 添加 PostgreSQL 仓库源
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+# 4. 更新包列表并安装
+sudo apt update
 sudo apt install -y postgresql-17 postgresql-contrib-17
+```
 
 # 启动服务
 sudo systemctl start postgresql
