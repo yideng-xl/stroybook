@@ -1,0 +1,41 @@
+[
+  {
+    "id": "愚公移山",
+    "titleZh": "愚公移山",
+    "titleEn": "Yu Gong Moves Mountains",
+    "styles": [
+      {
+        "id": "黏土动画",
+        "name": "黏土动画",
+        "coverImage": "/stories/愚公移山/黏土动画/page-1.png"
+      }
+    ],
+    "defaultStyle": "黏土动画"
+  },
+  {
+    "id": "桃园结义",
+    "titleZh": "桃园结义",
+    "titleEn": "Sworn Brotherhood in the Peach Garden",
+    "styles": [
+      {
+        "id": "黏土动画",
+        "name": "黏土动画",
+        "coverImage": "/stories/桃园结义/黏土动画/page-1.png"
+      }
+    ],
+    "defaultStyle": "黏土动画"
+  },
+  {
+    "id": "灰姑娘",
+    "titleZh": "灰姑娘",
+    "titleEn": "Cinderella",
+    "styles": [
+      {
+        "id": "迪士尼",
+        "name": "迪士尼",
+        "coverImage": "/stories/灰姑娘/迪士尼/page-1.png"
+      }
+    ],
+    "defaultStyle": "迪士尼"
+  }
+]

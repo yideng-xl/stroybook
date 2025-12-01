@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoryBook - Mobile童话</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Fredoka"', 'sans-serif'],
+                        hand: ['"Ma Shan Zheng"', 'cursive'],
+                    },
+                    colors: {
+                        brand: {
+                            yellow: '#FEF3C7',
+                            pink: '#FBCFE8',
+                            blue: '#BFDBFE'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FDF2F8; /* Pink-50 */
+        }
+        .card-shadow {
+            box-shadow: 0 10px 0 #E5E7EB;
+        }
+        .text-bubble {
+            position: relative;
+            background: #fff;
+            border-radius: 1.5em;
+        }
+        .text-bubble::after {
+            content: '';
+            position: absolute;
+            left: 2em;
+            top: 100%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #fff;
+            margin-left: -10px;
+        }
+    </style>
+</head>
+<body class="pb-24">
+
+    <!-- Header -->
+    <header class="fixed top-0 inset-x-0 bg-white/90 backdrop-blur border-b-4 border-pink-200 h-16 flex items-center justify-between px-4 z-50 rounded-b-2xl shadow-sm">
+        <a href="index.html" class="w-10 h-10 bg-yellow-300 rounded-full flex items-center justify-center text-xl border-2 border-white shadow">🏠</a>
+        <h1 class="font-hand text-2xl text-pink-500">灰姑娘</h1>
+        <div class="flex gap-2">
+             <select class="text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-xl px-2 py-1 bg-white outline-none">
+                <option>CN</option>
+                <option>EN</option>
+                <option selected>双语</option>
+             </select>
+             <button class="p-2 text-gray-600">
+    </header>
+
+    <!-- Content -->
+    <main class="mt-20 px-4 space-y-8">
+        
+        <!-- Page 1 -->
+        <article class="space-y-4">
+            <!-- Image Frame -->
+            <div class="bg-white p-2 rounded-3xl card-shadow transform rotate-1">
+                <div class="aspect-square bg-gray-200 rounded-2xl overflow-hidden relative">
+                    <img src="https://placehold.co/600x600/pink/white?text=Page+1" class="w-full h-full object-cover">
+                    <div class="absolute bottom-2 right-2 bg-black/40 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur">1</div>
+                </div>
+            </div>
+            <!-- Text Bubble -->
+            <div class="bg-white p-6 rounded-3xl border-2 border-blue-100 shadow-sm relative">
+                <p class="text-lg leading-relaxed text-gray-700 font-medium">在一个遥远的国度里，住着一位名叫灰姑娘的善良女孩。</p>
+                <div class="mt-3 pt-3 border-t border-dashed border-gray-200 text-gray-400 text-sm">
+                    In a faraway land lived a kind girl named Cinderella.
+                </div>
+                <!-- Decoration -->
+                <div class="absolute -top-3 -left-2 text-2xl">✨</div>
+            </div>
+        </article>
+
+        <!-- Page 2 -->
+        <article class="space-y-4">
+            <div class="bg-white p-2 rounded-3xl card-shadow transform -rotate-1">
+                <div class="aspect-square bg-gray-200 rounded-2xl overflow-hidden relative">
+                    <img src="https://placehold.co/600x600/blue/white?text=Page+2" class="w-full h-full object-cover">
+                    <div class="absolute bottom-2 right-2 bg-black/40 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur">2</div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border-2 border-green-100 shadow-sm relative">
+                <p class="text-lg leading-relaxed text-gray-700 font-medium">有一天，王国里传来了一个振奋人心的消息：王子将举办一场盛大的舞会。</p>
+                <div class="mt-3 pt-3 border-t border-dashed border-gray-200 text-gray-400 text-sm">
+                     One day, exciting news spread throughout the kingdom...
+                </div>
+                 <div class="absolute -bottom-3 -right-2 text-2xl">🏰</div>
+            </div>
+        </article>
+
+    </main>
+
+    <!-- Bottom Controls -->
+    <div class="fixed bottom-6 inset-x-4">
+        <div class="bg-gray-800/80 backdrop-blur text-white p-3 rounded-2xl flex items-center justify-between shadow-2xl">
+            <span class="text-sm font-bold ml-2">当前风格: 迪士尼</span>
+            <button class="bg-white text-gray-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-100">
+                换风格 🎨
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
