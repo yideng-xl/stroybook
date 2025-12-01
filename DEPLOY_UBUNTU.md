@@ -39,14 +39,19 @@ mvn -version
 sudo apt install -y postgresql postgresql-contrib
 
 # 启动服务
+```bash
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
+```
 
 # 创建数据库和用户
+```bash
 sudo -u postgres psql
+```
 
 # 在 psql 命令行中执行：
 # (注意：将 password 替换为您自己的强密码，并需同步更新 backend/src/main/resources/application.yml)
+```bash
 CREATE DATABASE storybook_db;
 CREATE USER storybook_user WITH ENCRYPTED PASSWORD 'storybook_pass';
 GRANT ALL PRIVILEGES ON DATABASE storybook_db TO storybook_user;
