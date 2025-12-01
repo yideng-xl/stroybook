@@ -7,11 +7,17 @@ interface ScrollViewerProps {
   story: StoryMetadata;
   styleId: string;
   langMode: LanguageMode;
+  onPageChange?: (page: number) => void;
 }
 
-export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode }) => {
-  
-  const getImagePath = (pageIndex: number) => {
+export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode, onPageChange }) => {
+  // Simple effect: report page 1 on mount, or ideally use IntersectionObserver
+  // For MVP, we just acknowledge the prop to match interface
+  useEffect(() => {
+      if (onPageChange) onPageChange(1); 
+  }, []);
+
+  const getStyleImage = (page: number) => {
     return getAssetUrl(`/stories/${story.id}/${styleId}/page-${pageIndex + 1}.png`);
   };
 

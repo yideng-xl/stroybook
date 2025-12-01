@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { StoryMetadata } from '../types';
-import { getAssetUrl } from '../utils/url';
+import { api } from '../api/client';
 
 export function useStoryData(storyId: string | undefined) {
   const [story, setStory] = useState<StoryMetadata | null>(null);
@@ -14,22 +14,21 @@ export function useStoryData(storyId: string | undefined) {
     }
 
     setLoading(true);
-    // Fetch from file server
-    const fetchUrl = getAssetUrl(`/stories/${storyId}/story.json`);
     
-    fetch(fetchUrl)
+    api.stories.getContent(storyId)
       .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load story: ${storyId}`);
-        return res.json();
-      })
-      .then((data) => {
         // Inject ID into the data for convenience
-        setStory({ ...data, id: storyId });
+        setStory({ ...res.data, id: storyId });
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
-        setError(err.message);
+        const msg = err.response?.status === 403 
+            ? '403 Forbidden' 
+            : err.response?.status === 404
+                ? 'Story not found'
+                : 'Failed to load story content';
+        setError(msg);
         setLoading(false);
       });
   }, [storyId]);

@@ -17,6 +17,7 @@ export interface StoryMetadata {
 export interface StoryStyle {
   id: string; // e.g., "迪士尼"
   name: string;
+  nameEn?: string; // Optional
   coverImage: string;
 }
 

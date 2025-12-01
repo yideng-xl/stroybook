@@ -8,6 +8,7 @@ interface FlipBookViewerProps {
   story: StoryMetadata;
   styleId: string;
   langMode: LanguageMode;
+  onPageChange?: (page: number) => void;
 }
 
 // Ensure pages receive ref for react-pageflip
@@ -21,7 +22,7 @@ const Page = forwardRef<HTMLDivElement, any>((props, ref) => {
   );
 });
 
-export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, langMode }) => {
+export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, langMode, onPageChange }) => {
   const bookRef = useRef<any>(null);
 
   // Helper to construct image path
@@ -36,6 +37,14 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
   const prevFlip = useCallback(() => {
     bookRef.current?.pageFlip()?.flipPrev();
   }, []);
+
+  const onFlip = useCallback((e: any) => {
+      if (onPageChange) {
+          // e.data is the index of the page.
+          // Cover is index 0. Content Page 1 is index 1.
+          onPageChange(e.data); 
+      }
+  }, [onPageChange]);
 
   // Calculate book dimensions
   const width = 1000;
@@ -65,6 +74,7 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
             className="book-shadow"
             style={{boxShadow: '0 20px 40px rgba(0,0,0,0.4)'}}
             startPage={0}
+            onFlip={onFlip}
         >
             {/* Cover Page */}
             <Page number="0">

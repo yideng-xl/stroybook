@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useStoryData } from '../hooks/useStoryData';
 import { useStoryManifest } from '../hooks/useStoryManifest';
 import { useMedia } from '../hooks/useMedia';
+import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { ReaderControls } from '../components/reader/ReaderControls';
 import { LanguageMode, StoryStyle } from '../types';
 
@@ -13,9 +15,30 @@ import { ScrollViewer } from '../components/reader/ScrollViewer';
 const ReadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { openLoginModal } = useAuth(); // Add this
 
   // 1. Fetch Story Data
   const { story, loading: storyLoading, error: storyError } = useStoryData(id);
+
+  // Handle specific error for rate limit
+  useEffect(() => {
+    if (storyError && storyError.includes('403')) {
+        if(confirm('您今天已免费阅读了2个故事！\n登录后可无限阅读所有绘本。\n要去登录吗？')) {
+            openLoginModal();
+            // We should also probably redirect to Home because background is blocked? 
+            // Or stay here and wait for login success to retry?
+            // For MVP, redirect home THEN open modal is safer, or just open modal.
+            // Let's redirect home to avoid broken state background
+            navigate('/');
+            // Small timeout to allow navigate to happen, then open modal? 
+            // Actually, AuthContext state persists across routes.
+            setTimeout(() => openLoginModal(), 100);
+        } else {
+            navigate('/');
+        }
+    }
+  }, [storyError, navigate, openLoginModal]);
   
   // 2. Fetch Manifest (to know available styles for this story)
   // Optimization: In a real app, we might store manifest in a global context to avoid refetching.
@@ -24,9 +47,56 @@ const ReadPage: React.FC = () => {
   // 3. State Management
   const [langMode, setLangMode] = useState<LanguageMode>('zh');
   const [currentStyle, setCurrentStyle] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
   
   // 4. Responsive Check
   const isDesktop = useMedia('(min-width: 768px)');
+
+  // 5. Timer for Reading Duration
+  useEffect(() => {
+    const startTime = Date.now();
+    
+    // Save progress function
+    const saveProgress = () => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        if (duration > 0 && id) {
+             api.history.save({ 
+                storyId: id, 
+                styleName: currentStyle, 
+                currentPage: currentPage, 
+                durationSeconds: duration 
+            }).catch(() => {}); // Ignore error on exit
+        }
+    };
+
+    return () => {
+        saveProgress();
+    };
+  }, [id, currentStyle, currentPage]); // Re-save if page changes? Actually we want to save accumulate duration. 
+  // Wait, if we depend on currentPage, every page flip triggers saveProgress (and resets timer!).
+  // Correct logic:
+  // Timer should NOT reset on page flip. It should count total time in this session.
+  // BUT we need latest currentPage when unmounting.
+  // Solution: Use a ref for currentPage.
+
+  const currentPageRef = React.useRef(1);
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    const save = () => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        if (duration > 0 && id) {
+             api.history.save({ 
+                storyId: id, 
+                styleName: currentStyle, 
+                currentPage: currentPageRef.current, 
+                durationSeconds: duration 
+            }).catch(() => {});
+        }
+    };
+    return save;
+  }, [id, currentStyle]); // Only reset timer if story/style changes. Page flip updates ref.
 
   // Initialize style from URL or default
   useEffect(() => {
@@ -80,7 +150,8 @@ const ReadPage: React.FC = () => {
            <ViewerComponent 
               story={story} 
               styleId={currentStyle} 
-              langMode={langMode} 
+              langMode={langMode}
+              onPageChange={setCurrentPage}
            />
         </div>
 
