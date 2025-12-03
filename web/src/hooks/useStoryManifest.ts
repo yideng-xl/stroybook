@@ -15,8 +15,10 @@ export function useStoryManifest() {
             id: item.id,
             titleZh: item.titleZh,
             titleEn: item.titleEn,
+            status: item.status, // Map status
+            userId: item.userId, // Map userId
             styles: (item.styles || []).map((s: any) => ({
-                id: s.name, 
+                id: s.name, // Map backend 'name' to frontend 'id'
                 name: s.name,
                 nameEn: s.nameEn,
                 coverImage: s.coverImage

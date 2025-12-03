@@ -17,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.http.HttpMethod; // Added import
+import org.springframework.security.config.Customizer; // Added import
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -45,10 +48,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+        http.cors(Customizer.withDefaults()) // Enable CORS
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/stories/**", "/stories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stories", "/api/stories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll() // Explicit POST
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/stories/callback").permitAll()
+                        .requestMatchers("/stories/**").permitAll()
+                        .requestMatchers("/error").permitAll() // Allow error page
                         .anyRequest().authenticated()
                 );
 

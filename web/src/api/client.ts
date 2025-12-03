@@ -34,9 +34,10 @@ export const api = {
         changePassword: (data: any) => client.post('/auth/change-password', data),
     },
     stories: {
-        list: (keyword?: string) => client.get('/stories', { params: { keyword } }),
+        list: (keyword?: string, status?: string) => client.get('/stories', { params: { keyword, status } }),
         get: (id: string) => client.get(`/stories/${id}`),
         getContent: (id: string) => client.get(`/stories/${id}/content`),
+        generate: (data: { prompt: string; style: string }) => client.post('/stories/generate', data),
     },
     history: {
         list: () => client.get('/history'),

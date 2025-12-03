@@ -4,14 +4,11 @@ export interface StoryPage {
   textEn: string;
 }
 
-export interface StoryMetadata {
-  id: string; // Folder name, e.g., "灰姑娘"
-  titleZh: string;
-  titleEn: string;
-  styleZh: string;
-  styleEn: string;
-  fullStory: string;
-  pages: StoryPage[];
+export enum StoryStatus {
+  DRAFT = 'DRAFT',
+  GENERATING = 'GENERATING',
+  PUBLISHED = 'PUBLISHED',
+  FAILED = 'FAILED',
 }
 
 export interface StoryStyle {
@@ -21,12 +18,31 @@ export interface StoryStyle {
   coverImage: string;
 }
 
+// Comprehensive Story interface from backend entity
+export interface Story {
+  id: string;
+  titleZh: string;
+  titleEn: string;
+  userId: string;
+  status: StoryStatus;
+  generationPrompt?: string;
+  selectedStyleId?: string;
+  errorMessage?: string;
+  description?: string;
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+  styles: StoryStyle[];
+  pages?: StoryPage[]; // Optional for list view, full detail has it
+}
+
 export interface StoryManifestItem {
   id: string;
   titleZh: string;
   titleEn: string;
   styles: StoryStyle[];
   defaultStyle: string;
+  status?: StoryStatus; // Add status for manifest, for unified display
+  userId?: string; // Add userId for manifest, to distinguish user's own stories
 }
 
 export type StoryManifest = StoryManifestItem[];

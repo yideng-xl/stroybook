@@ -3,17 +3,23 @@ package com.storybook.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.storybook.dto.StoryJsonDto;
 import com.storybook.entity.Story;
+import com.storybook.entity.StoryStatus;
 import com.storybook.repository.StoryRepository;
+import com.storybook.service.N8NService;
 import com.storybook.service.StoryService;
+import com.storybook.service.StorySyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,17 +27,40 @@ import java.util.Optional;
 public class StoryServiceImpl implements StoryService {
 
     private final StoryRepository storyRepository;
+    private final N8NService n8nService;
+    private final StorySyncService storySyncService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${storybook.stories-path:../stories}")
     private String storiesPath;
 
     @Override
-    public List<Story> getAllStories(String keyword) {
+    public List<Story> getAllStories(String userId, String keyword) {
+        // Always return all PUBLISHED stories for the public feed, regardless of login status
         if (keyword != null && !keyword.isBlank()) {
-            return storyRepository.findByTitleZhContainingIgnoreCaseOrTitleEnContainingIgnoreCase(keyword, keyword);
+            return storyRepository.findByStatusAndTitleZhContainingIgnoreCaseOrStatusAndTitleEnContainingIgnoreCaseOrderByCreatedAtDesc(
+                    StoryStatus.PUBLISHED, keyword, StoryStatus.PUBLISHED, keyword
+            );
+        } else {
+            return storyRepository.findByStatusOrderByCreatedAtDesc(StoryStatus.PUBLISHED);
         }
-        return storyRepository.findAll();
+    }
+
+    @Override
+    public List<Story> getStoriesByStatus(String userId, StoryStatus status, String keyword) {
+        if (userId == null) {
+            // Guests can only see PUBLISHED stories, no filtering by other statuses
+            return List.of();
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            // Combined search by user, status, and keyword
+            return storyRepository.findByUserIdAndStatusAndTitleZhContainingIgnoreCaseOrUserIdAndStatusAndTitleEnContainingIgnoreCaseOrderByCreatedAtDesc(
+                    userId, status, keyword, userId, status, keyword
+            );
+        } else {
+            return storyRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status);
+        }
     }
 
     @Override
@@ -41,8 +70,20 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public Optional<StoryJsonDto> getStoryDetail(String id) {
-        // Retrieve full content from filesystem
-        File jsonFile = new File(storiesPath + "/" + id, "story.json");
+        // Retrieve full content from filesystem (for now, eventually from DB)
+        String styleId = storyRepository.findById(id).map(Story::getSelectedStyleId).orElse("default");
+        
+        // Try style-specific path first (MVP3)
+        File jsonFile = new File(storiesPath + File.separator + id + File.separator + styleId, "story.json");
+        
+        // Fallback to root path (MVP2 compatibility)
+        if (!jsonFile.exists()) {
+             File rootJsonFile = new File(storiesPath + File.separator + id, "story.json");
+             if (rootJsonFile.exists()) {
+                 jsonFile = rootJsonFile;
+             }
+        }
+
         if (jsonFile.exists()) {
             try {
                 StoryJsonDto dto = objectMapper.readValue(jsonFile, StoryJsonDto.class);
@@ -52,5 +93,59 @@ public class StoryServiceImpl implements StoryService {
             }
         }
         return Optional.empty();
+    }
+
+    @Override
+    @Transactional
+    public String initiateStoryGeneration(String userId, String prompt, String style) {
+        String storyId = UUID.randomUUID().toString();
+
+        Story newStory = new Story();
+        newStory.setId(storyId);
+        newStory.setUserId(userId);
+        newStory.setStatus(StoryStatus.GENERATING);
+        newStory.setGenerationPrompt(prompt);
+        newStory.setSelectedStyleId(style); // User selected style for generation
+        // Title and description will be filled after N8N callback and sync
+        storyRepository.save(newStory);
+
+        // Trigger N8N webhook asynchronously
+        n8nService.triggerN8NWebhook(storyId, prompt, style, userId);
+
+        log.info("Story generation initiated for userId: {} with storyId: {}", userId, storyId);
+        return storyId;
+    }
+
+    @Override
+    @Transactional
+    public void handleN8NCallback(String storyId, String status, String errorMessage) {
+        Optional<Story> optionalStory = storyRepository.findById(storyId);
+        if (optionalStory.isEmpty()) {
+            log.error("N8N Callback received for non-existent storyId: {}", storyId);
+            return;
+        }
+
+        Story story = optionalStory.get();
+        story.setUpdatedAt(LocalDateTime.now());
+
+        try {
+            StoryStatus newStatus = StoryStatus.valueOf(status.toUpperCase());
+            story.setStatus(newStatus);
+            story.setErrorMessage(errorMessage);
+
+            if (newStatus == StoryStatus.PUBLISHED) {
+                log.info("N8N Callback: Story {} generation SUCCESS. Triggering file sync.", storyId);
+                // Trigger story file sync after successful generation
+                storySyncService.syncStoryFiles(storyId); // Ensure this method can sync a single story
+            } else if (newStatus == StoryStatus.FAILED) {
+                log.warn("N8N Callback: Story {} generation FAILED. Error: {}", storyId, errorMessage);
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("N8N Callback received invalid status: {} for storyId: {}", status, storyId);
+            story.setStatus(StoryStatus.FAILED); // Set to failed for invalid status
+            story.setErrorMessage("Invalid status received from N8N: " + status);
+        } finally {
+            storyRepository.save(story);
+        }
     }
 }

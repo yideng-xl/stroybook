@@ -25,3 +25,4 @@ jwt:
 # Application Specific Config
 storybook:
   stories-path: ../stories # Relative to backend/ dir or absolute path
+  n8n-webhook-url: http://localhost:5678/webhook-test/storybook-generate # Placeholder, replace with actual N8N webhook URL

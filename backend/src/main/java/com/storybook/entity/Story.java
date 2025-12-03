@@ -3,6 +3,9 @@ package com.storybook.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp; // Added import
+import org.hibernate.annotations.UpdateTimestamp; // Added import
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

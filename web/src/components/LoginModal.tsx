@@ -59,7 +59,17 @@ export const LoginModal: React.FC = () => {
                 setConfirmPassword('');
             }
         } catch (err: any) {
-            setError(err.response?.data || '操作失败，请检查网络或账号');
+            const errorData = err.response?.data;
+            let errorMessage = '操作失败，请检查网络或账号';
+            
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (errorData && typeof errorData === 'object') {
+                // Handle Spring Boot default error object or custom JSON
+                errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+            }
+            
+            setError(errorMessage);
         }
     };
 

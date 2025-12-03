@@ -1,11 +1,103 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User as UserIcon, LogOut, Clock } from 'lucide-react';
+import { Search, User as UserIcon, LogOut, Clock, Loader2, XCircle } from 'lucide-react';
 import { useStoryManifest } from '../hooks/useStoryManifest';
 import { useAuth } from '../context/AuthContext';
 import { Layout } from '../components/Layout';
 import { getAssetUrl } from '../utils/url';
 import { api } from '../api/client';
+import { useUserStories } from '../hooks/useUserStories'; // Import the new hook
+import { Story, StoryStatus } from '../types'; // Import Story and StoryStatus types
+import { twMerge } from 'tailwind-merge'; // For conditional class merging
+
+// A reusable StoryCard component that handles different statuses
+const StoryCard: React.FC<{ story: Story | any; historyDuration?: number; isUserStory?: boolean }> = 
+  ({ story, historyDuration, isUserStory = false }) => {
+    const navigate = useNavigate();
+
+    // Determine the style to render based on selection or default. For user stories, use selectedStyleId
+    const styleToRender = isUserStory && story.selectedStyleId
+      ? story.styles.find((s:any) => s.name === story.selectedStyleId) // Corrected from s.id to s.name
+      : story.styles.find((s:any) => s.name === (story.defaultStyle || story.styles[0]?.name)); // Corrected from s.id to s.name
+
+    const imageUrl = styleToRender ? getAssetUrl(styleToRender.coverImage) : 'https://placehold.co/300x400/e2e8f0/94a3b8?text=No+Image';
+
+    let cardContent;
+    let linkPath = `/read/${story.id}?style=${styleToRender?.name || ''}`;
+
+    switch (story.status) {
+      case StoryStatus.GENERATING:
+        cardContent = (
+          <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden flex flex-col items-center justify-center p-4 text-center text-gray-500 font-bold">
+            <Loader2 size={48} className="animate-spin text-blue-500 mb-4" />
+            <p className="text-lg">故事生成中...</p>
+            <p className="text-sm">请稍候</p>
+          </div>
+        );
+        linkPath = ''; // Make card unclickable while generating
+        break;
+      case StoryStatus.FAILED:
+        cardContent = (
+          <div className="aspect-[3/4] bg-red-100 relative overflow-hidden flex flex-col items-center justify-center p-4 text-center text-red-700 font-bold">
+            <XCircle size={48} className="text-red-500 mb-4" />
+            <p className="text-lg">生成失败</p>
+            <p className="text-sm truncate max-w-full">{story.errorMessage || '未知错误'}</p>
+          </div>
+        );
+        linkPath = ''; // Make card unclickable if failed (or link to a retry page)
+        break;
+      case StoryStatus.PUBLISHED:
+      default:
+        cardContent = (
+          <>
+            <div className="aspect-[3/4] bg-blue-100 relative overflow-hidden">
+              <img
+                src={imageUrl}
+                alt={story.titleZh}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://placehold.co/300x400/e2e8f0/94a3b8?text=No+Image';
+                }}
+              />
+              {styleToRender && (
+                <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-sm transform rotate-3 group-hover:rotate-6 transition-transform whitespace-nowrap max-w-[90%] truncate">
+                  {styleToRender.name}
+                </div>
+              )}
+              {historyDuration !== undefined && historyDuration > 0 && (
+                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                  <Clock size={10} />
+                  {Math.ceil(historyDuration / 60)} 分钟
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-white text-center">
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-pink-500 transition-colors truncate">
+                {story.titleZh}
+              </h3>
+            </div>
+          </>
+        );
+        break;
+    }
+
+    const cardClasses = twMerge(
+        "group bg-white rounded-3xl overflow-hidden border-4 border-white shadow-md relative transition-all duration-300",
+        story.status === StoryStatus.GENERATING && "opacity-70 cursor-wait",
+        story.status === StoryStatus.FAILED && "opacity-80 cursor-not-allowed border-red-400",
+        story.status === StoryStatus.PUBLISHED && "cursor-pointer hover:-translate-y-2 hover:rotate-1 hover:shadow-xl hover:border-blue-400"
+    )
+
+    return (
+        <div 
+            className={cardClasses}
+            onClick={() => linkPath && navigate(linkPath)}
+        >
+            {cardContent}
+        </div>
+    );
+};
+
 
 const HomePage: React.FC = () => {
   const { manifest, loading, error } = useStoryManifest();
@@ -14,6 +106,12 @@ const HomePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('');
   const [historyMap, setHistoryMap] = useState<Record<string, number>>({});
+
+  // Fetch user's own stories
+  const { userStories, isLoading: userStoriesLoading, error: userStoriesError } = useUserStories({
+    userId: user?.username || null, // Use username because backend stores username as userId
+    enabled: !!user, // Only fetch if user is logged in
+  });
 
   // Scroll to top on mount to avoid scroll position issues
   useEffect(() => {
@@ -38,20 +136,53 @@ const HomePage: React.FC = () => {
   // Extract all unique styles from manifest for the dropdown
   const allStyles = useMemo(() => {
     const styles = new Set<string>();
+    // Combine styles from manifest and userStories
     manifest.forEach(story => {
       story.styles.forEach(s => styles.add(s.id));
     });
+    userStories.forEach(story => {
+        if (story.selectedStyleId) {
+            styles.add(story.selectedStyleId);
+        }
+    });
     return Array.from(styles);
-  }, [manifest]);
+  }, [manifest, userStories]);
 
-  // Filter stories
-  const filteredStories = useMemo(() => {
+  // Filter public stories (exclude current user's own stories)
+  const filteredPublicStories = useMemo(() => {
     return manifest.filter(story => {
       const matchTitle = story.titleZh.includes(searchTerm) || story.titleEn.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStyle = selectedStyle ? story.styles.some(s => s.id === selectedStyle) : true;
-      return matchTitle && matchStyle;
+      // Only show PUBLISHED stories in the public list
+      // And exclude stories created by the current user to avoid duplication
+      const isNotMyStory = !user || story.userId !== user.username;
+      
+      return matchTitle && matchStyle && story.status === StoryStatus.PUBLISHED && isNotMyStory;
     });
-  }, [manifest, searchTerm, selectedStyle]);
+  }, [manifest, searchTerm, selectedStyle, user]);
+
+  // Filter user's stories (all statuses)
+  const filteredUserStories = useMemo(() => {
+    return userStories.filter(story => {
+        const matchTitle = (story.titleZh || '').includes(searchTerm) || (story.titleEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchStyle = true;
+        if (selectedStyle) {
+            // For GENERATING stories, check selectedStyleId directly
+            if (story.status === StoryStatus.GENERATING && story.selectedStyleId) {
+                matchStyle = story.selectedStyleId === selectedStyle;
+            } else {
+                // For PUBLISHED/FAILED stories, check the styles array
+                // IMPORTANT: The backend API returns styles with numeric IDs in `id` and style names in `name`.
+                // selectedStyle contains the style name (e.g., "迪士尼").
+                // So we must compare s.name, not s.id.
+                matchStyle = story.styles.some(s => s.name === selectedStyle);
+            }
+        }
+        
+        return matchTitle && matchStyle; 
+    });
+  }, [userStories, searchTerm, selectedStyle]);
 
   // Parallax Effect Logic (Simple version for React)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -66,8 +197,8 @@ const HomePage: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMove);
   }, []);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-2xl font-bold text-yellow-600">加载魔法故事中...✨</div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">哎呀，魔法书打不开了: {error}</div>;
+  if (loading || userStoriesLoading) return <div className="min-h-screen flex items-center justify-center text-2xl font-bold text-yellow-600">加载魔法故事中...✨</div>;
+  if (error || userStoriesError) return <div className="min-h-screen flex items-center justify-center text-red-500">哎呀，魔法书打不开了: {error || userStoriesError}</div>;
 
   return (
     <Layout>
@@ -142,62 +273,39 @@ const HomePage: React.FC = () => {
 
       {/* Main Grid */}
       <main className="flex-grow max-w-7xl mx-auto px-4 pb-20 pt-8 relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
-          
-          {filteredStories.map(story => {
-            // Find the cover image: either from selected style or default style
-            const styleToRender = selectedStyle 
-                ? story.styles.find(s => s.id === selectedStyle) 
-                : story.styles.find(s => s.id === story.defaultStyle) || story.styles[0];
-            
-            // If the story doesn't have the selected style, we might skip it or show default.
-            // The filter logic above handles skipping. So here styleToRender is guaranteed if selectedStyle is empty.
-            // If selectedStyle is present, filter keeps stories that HAVE that style.
-            
-            if (!styleToRender) return null;
-
-            return (
-              <Link to={`/read/${story.id}?style=${styleToRender.id}`} key={story.id}>
-                <div className="group bg-white rounded-3xl overflow-hidden border-4 border-white shadow-md cursor-pointer relative transition-all duration-300 hover:-translate-y-2 hover:rotate-1 hover:shadow-xl hover:border-blue-400">
-                  <div className="aspect-[3/4] bg-blue-100 relative overflow-hidden">
-                    <img 
-                        src={getAssetUrl(styleToRender.coverImage)} 
-                        alt={story.titleZh} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/300x400/e2e8f0/94a3b8?text=No+Image';
-                        }}
-                    />
-                    <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-sm transform rotate-3 group-hover:rotate-6 transition-transform whitespace-nowrap max-w-[90%] truncate">
-                      {styleToRender.name}
-                    </div>
-                    {historyMap[story.id] && (
-                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
-                            <Clock size={10} />
-                            {Math.ceil(historyMap[story.id] / 60)} 分钟
+        {/* My Creations Section - Visible if logged in */}
+        {user && (
+            <section className="mb-12 border-b-2 border-dashed border-gray-200 pb-8">
+                <h2 className="text-3xl font-bold text-brand-dark mb-6 drop-shadow-sm flex items-center gap-2">
+                    <span>我的创作 ✨</span>
+                    <span className="text-sm font-normal text-gray-500 bg-white/50 px-3 py-1 rounded-full">{filteredUserStories.length} 个故事</span>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                    {/* Add New Story Link - Always first */}
+                    <Link to="/create" className="group bg-white rounded-3xl overflow-hidden border-4 border-dashed border-gray-300 shadow-sm cursor-pointer relative flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all aspect-[3/4]">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-white group-hover:scale-110 transition-transform">
+                        <span className="text-4xl text-gray-400 group-hover:text-blue-500">+</span>
                         </div>
-                    )}
-                  </div>
-                  <div className="p-4 bg-white text-center">
-                    <h3 className="text-xl font-bold text-gray-800 group-hover:text-pink-500 transition-colors truncate">
-                      {story.titleZh}
-                    </h3>
-                  </div>
+                        <span className="font-bold text-gray-400 group-hover:text-blue-500">创作新故事</span>
+                    </Link>
+
+                    {filteredUserStories.map(story => (
+                        <StoryCard key={story.id} story={story} isUserStory={true} />
+                    ))}
                 </div>
-              </Link>
-            );
-          })}
+            </section>
+        )}
 
-          {/* Add New Story Placeholder */}
-          <div className="group bg-white rounded-3xl overflow-hidden border-4 border-dashed border-gray-300 shadow-sm cursor-pointer relative flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all aspect-[3/4]"
-               onClick={() => alert('功能开发中，请稍后...')}
-          >
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-white group-hover:scale-110 transition-transform">
-              <span className="text-4xl text-gray-400 group-hover:text-blue-500">+</span>
-            </div>
-            <span className="font-bold text-gray-400 group-hover:text-blue-500">新故事</span>
-          </div>
-
+        {/* Public Stories Section */}
+        <h2 className="text-3xl font-bold text-brand-dark mb-6 drop-shadow-sm">精选故事 📚</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
+          {filteredPublicStories.map(story => (
+            <StoryCard 
+                key={story.id} 
+                story={story as unknown as Story} // Cast manifest item to Story type, assuming it has enough info
+                historyDuration={historyMap[story.id]}
+            />
+          ))}
         </div>
       </main>
 
