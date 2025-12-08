@@ -27,6 +27,23 @@ cd ../file-server && npm install
 ```
 
 ### 2. 启动服务
+```
+
+### ⚠️ 重要提示：运行服务前请将 `stories-sample` 重命名为 `stories`
+
+为了避免将大型故事文件提交到 Git 仓库，我们已将示例故事数据移至 `stories-sample` 目录。
+
+**在首次运行或需要加载示例故事时，请务必执行以下操作：**
+
+```bash
+# 在项目根目录执行
+mv stories-sample stories
+```
+
+**如果您之前修改了任何配置（如 `application.yml` 中关于故事路径的设置），请确保将其恢复到原始配置（指向 `stories` 目录）。**
+
+---
+
 我们在根目录提供了 PM2 配置文件，一键启动所有服务：
 
 ```bash
