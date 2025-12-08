@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StoryMetadata, LanguageMode } from '../../types';
 import { Sparkles, Castle } from 'lucide-react';
 import { getAssetUrl } from '../../utils/url';
@@ -8,16 +8,43 @@ interface ScrollViewerProps {
   styleId: string;
   langMode: LanguageMode;
   onPageChange?: (page: number) => void;
+  autoPlay: boolean;
+  audioUrl?: string;
+  playAudio: (url: string) => Promise<void>;
 }
 
-export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode, onPageChange }) => {
-  // Simple effect: report page 1 on mount, or ideally use IntersectionObserver
-  // For MVP, we just acknowledge the prop to match interface
-  useEffect(() => {
-      if (onPageChange) onPageChange(1); 
-  }, []);
+export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode, onPageChange, autoPlay, audioUrl, playAudio }) => {
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const articleRefs = useRef<(HTMLElement | null)[]>([]);
 
-  const getStyleImage = (page: number) => {
+  useEffect(() => {
+      // Initialize IntersectionObserver to track visible page
+      observerRef.current = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                  const pageIndex = Number(entry.target.getAttribute('data-page-index'));
+                  if (!isNaN(pageIndex) && onPageChange) {
+                      onPageChange(pageIndex + 1);
+                  }
+              }
+          });
+      }, { threshold: 0.6 }); // 60% visible
+
+      articleRefs.current.forEach((el) => {
+          if (el) observerRef.current?.observe(el);
+      });
+
+      return () => observerRef.current?.disconnect();
+  }, [story.pages.length, onPageChange]);
+
+  // Auto-play Effect
+  React.useEffect(() => {
+      if (autoPlay && audioUrl) {
+          playAudio(audioUrl);
+      }
+  }, [audioUrl, autoPlay, playAudio]);
+
+  const getImagePath = (pageIndex: number) => {
     return getAssetUrl(`/stories/${story.id}/${styleId}/page-${pageIndex + 1}.png`);
   };
 
@@ -30,7 +57,13 @@ export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, lang
       </div>
 
       {story.pages.map((page, index) => (
-        <article key={index} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{animationDelay: `${index * 100}ms`}}>
+        <article 
+            key={index} 
+            ref={el => articleRefs.current[index] = el}
+            data-page-index={index}
+            className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700" 
+            style={{animationDelay: `${index * 100}ms`}}
+        >
             
             {/* Image Card */}
             <div className={`bg-white p-2 rounded-3xl shadow-lg transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} transition-transform`}>

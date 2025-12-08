@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authService } from '../context/AuthContext'; // Import the authService
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -19,13 +20,34 @@ export const client = axios.create({
 });
 
 client.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = authService.token; // Use authService's token
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers['X-Guest-Id'] = guestId || '';
     return config;
 });
+
+// Add a response interceptor
+client.interceptors.response.use(
+    response => response,
+    error => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            // Prevent infinite loop if the error itself is from /auth/login or /auth/register
+            if (originalRequest.url && (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/register'))) {
+                return Promise.reject(error);
+            }
+            
+            console.warn('Token expired or unauthorized. Logging out...');
+            authService.logout();
+            // Optionally, open login modal after logout
+            authService.openLoginModal();
+            return Promise.reject(error);
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const api = {
     auth: {

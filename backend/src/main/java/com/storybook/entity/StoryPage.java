@@ -29,4 +29,8 @@ public class StoryPage {
     private String textEn;
 
     private String imageUrl; // Path to the image for this page
+
+    private String audioUrlZh; // Audio URL for Chinese text
+
+    private String audioUrlEn; // Audio URL for English text
 }

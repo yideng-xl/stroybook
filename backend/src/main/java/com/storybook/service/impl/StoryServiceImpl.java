@@ -70,7 +70,37 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public Optional<StoryJsonDto> getStoryDetail(String id) {
-        // Retrieve full content from filesystem (for now, eventually from DB)
+        // Retrieve full content from DB first
+        Optional<Story> storyOpt = storyRepository.findById(id);
+        
+        if (storyOpt.isPresent()) {
+            Story story = storyOpt.get();
+            // Check if story pages are populated (should be if synced)
+            if (story.getPages() != null && !story.getPages().isEmpty()) {
+                StoryJsonDto dto = new StoryJsonDto();
+                dto.setTitleZh(story.getTitleZh());
+                dto.setTitleEn(story.getTitleEn());
+                dto.setFullStory(story.getDescription()); // Assuming description holds full text or similar
+                // We might need to map styles too, but frontend usually selects style separately.
+                // For basic detail, populate pages.
+                
+                List<StoryJsonDto.PageDto> pageDtos = story.getPages().stream().map(page -> {
+                    StoryJsonDto.PageDto p = new StoryJsonDto.PageDto();
+                    p.setPageNumber(page.getPageNumber());
+                    p.setTextZh(page.getTextZh());
+                    p.setTextEn(page.getTextEn());
+                    p.setAudioUrlZh(page.getAudioUrlZh());
+                    p.setAudioUrlEn(page.getAudioUrlEn());
+                    return p;
+                }).toList();
+                
+                dto.setPages(pageDtos);
+                return Optional.of(dto);
+            }
+        }
+
+        // Fallback to filesystem if DB pages are empty (e.g. old legacy stories not fully synced)
+        // Retrieve full content from filesystem
         String styleId = storyRepository.findById(id).map(Story::getSelectedStyleId).orElse("default");
         
         // Try style-specific path first (MVP3)
@@ -129,7 +159,13 @@ public class StoryServiceImpl implements StoryService {
         story.setUpdatedAt(LocalDateTime.now());
 
         try {
-            StoryStatus newStatus = StoryStatus.valueOf(status.toUpperCase());
+            // Map "SUCCESS" from N8N to "PUBLISHED" in backend
+            String normalizedStatus = status.toUpperCase();
+            if ("SUCCESS".equals(normalizedStatus)) {
+                normalizedStatus = "PUBLISHED";
+            }
+            
+            StoryStatus newStatus = StoryStatus.valueOf(normalizedStatus);
             story.setStatus(newStatus);
             story.setErrorMessage(errorMessage);
 

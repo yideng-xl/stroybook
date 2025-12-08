@@ -158,6 +158,25 @@ public class StorySyncServiceImpl implements StorySyncService {
                 page.setTextEn(pageDto.getTextEn());
                 // Image URL still depends on selectedStyleId
                 page.setImageUrl(getCoverImagePath(storyId, styleId, pageDto.getPageNumber()));
+                
+                // Audio Logic
+                // 1. Check file system existence
+                // storiesPath is typically "../stories" or absolute path to stories root
+                String audioFileNameZh = "page-" + pageDto.getPageNumber() + "-zh.mp3";
+                File audioFileZh = new File(storiesPath + File.separator + storyId, audioFileNameZh);
+                
+                if (audioFileZh.exists()) {
+                    // 2. Set Web URL path
+                    page.setAudioUrlZh("/stories/" + storyId + "/" + audioFileNameZh);
+                }
+                
+                String audioFileNameEn = "page-" + pageDto.getPageNumber() + "-en.mp3";
+                File audioFileEn = new File(storiesPath + File.separator + storyId, audioFileNameEn);
+                
+                if (audioFileEn.exists()) {
+                    page.setAudioUrlEn("/stories/" + storyId + "/" + audioFileNameEn);
+                }
+
                 story.getPages().add(page);
             });
 
@@ -196,6 +215,11 @@ public class StorySyncServiceImpl implements StorySyncService {
     // Adjusted to accept pageNumber
     private String getCoverImagePath(String storyId, String styleName, int pageNumber) {
         return "/stories/" + storyId + File.separator + styleName + File.separator + "page-" + pageNumber + ".png";
+    }
+
+    private String getAudioPath(String storyId, int pageNumber, String lang) {
+        // /stories/{storyId}/page-{pageNumber}-{lang}.mp3
+        return "/stories/" + storyId + "/page-" + pageNumber + "-" + lang + ".mp3";
     }
 
     // Original getCoverImagePath, kept for backward compatibility if needed, but the new one is more precise

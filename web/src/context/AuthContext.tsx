@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../api/client';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'; // Corrected imports
+// import { api } from '../api/client'; // api is not directly used here after refactor
 
 interface User {
     id: string;
@@ -8,7 +8,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    token: string | null; // Added token to interface
+    token: string | null; 
     login: (token: string, user: User) => void;
     logout: () => void;
     isAuthenticated: boolean;
@@ -19,42 +19,113 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const authService = {
+    _user: null as User | null,
+    _token: localStorage.getItem('token'),
+    _isLoginModalOpen: false,
+    _listeners: [] as ((user: User | null, token: string | null) => void)[],
+    _modalListeners: [] as ((isOpen: boolean) => void)[],
+
+    init() {
+        const savedUser = localStorage.getItem('user');
+        if (this._token && savedUser) {
+            this._user = JSON.parse(savedUser);
+        }
+    },
+
+    login(token: string, userData: User) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        this._token = token;
+        this._user = userData;
+        this._notifyListeners();
+        this.closeLoginModal();
+    },
+
+    logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        this._token = null;
+        this._user = null;
+        this._notifyListeners();
+        // Redirect to home if on a protected route
+        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+            window.location.href = '/';
+        }
+    },
+
+    openLoginModal() {
+        this._isLoginModalOpen = true;
+        this._notifyModalListeners();
+    },
+
+    closeLoginModal() {
+        this._isLoginModalOpen = false;
+        this._notifyModalListeners();
+    },
+
+    subscribe(listener: (user: User | null, token: string | null) => void) {
+        this._listeners.push(listener);
+        listener(this._user, this._token); // Notify immediately
+        return () => {
+            this._listeners = this._listeners.filter(l => l !== listener);
+        };
+    },
+
+    subscribeModal(listener: (isOpen: boolean) => void) {
+        this._modalListeners.push(listener);
+        listener(this._isLoginModalOpen); // Notify immediately
+        return () => {
+            this._modalListeners = this._modalListeners.filter(l => l !== listener);
+        };
+    },
+
+    _notifyListeners() {
+        this._listeners.forEach(listener => listener(this._user, this._token));
+    },
+
+    _notifyModalListeners() {
+        this._modalListeners.forEach(listener => listener(this._isLoginModalOpen));
+    },
+
+    get user() { return this._user; },
+    get token() { return this._token; },
+    get isAuthenticated() { return !!this._user; },
+    get isLoginModalOpen() { return this._isLoginModalOpen; }
+};
+
+authService.init(); // Initialize the service when the module loads
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(localStorage.getItem('token')); // Initialize token state
+    const [token, setToken] = useState<string | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (storedToken && savedUser) {
-            setToken(storedToken); // Ensure state is synced
-            setUser(JSON.parse(savedUser));
-        }
+        // Sync internal state with authService on mount
+        const unsubscribe = authService.subscribe((u, t) => {
+            setUser(u);
+            setToken(t);
+        });
+        const unsubscribeModal = authService.subscribeModal((isOpen) => {
+            setIsLoginModalOpen(isOpen);
+        });
+        return () => { unsubscribe(); unsubscribeModal(); };
     }, []);
 
-    const login = (newToken: string, userData: User) => {
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setToken(newToken); // Update state
-        setUser(userData);
-        setIsLoginModalOpen(false); // Close modal on success
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null); // Update state
-        setUser(null);
-    };
+    const contextValue = useMemo(() => ({
+        user: user,
+        token: token,
+        login: authService.login.bind(authService),
+        logout: authService.logout.bind(authService),
+        isAuthenticated: !!user,
+        isLoginModalOpen: isLoginModalOpen,
+        openLoginModal: authService.openLoginModal.bind(authService),
+        closeLoginModal: authService.closeLoginModal.bind(authService),
+    }), [user, token, isLoginModalOpen]);
 
     return (
-        <AuthContext.Provider value={{ 
-            user, token, login, logout, isAuthenticated: !!user, // Provide token
-            isLoginModalOpen,
-            openLoginModal: () => setIsLoginModalOpen(true),
-            closeLoginModal: () => setIsLoginModalOpen(false)
-        }}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

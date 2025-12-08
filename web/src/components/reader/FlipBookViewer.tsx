@@ -9,6 +9,9 @@ interface FlipBookViewerProps {
   styleId: string;
   langMode: LanguageMode;
   onPageChange?: (page: number) => void;
+  autoPlay: boolean;
+  audioUrl?: string;
+  playAudio: (url: string) => Promise<void>;
 }
 
 // Ensure pages receive ref for react-pageflip
@@ -22,7 +25,7 @@ const Page = forwardRef<HTMLDivElement, any>((props, ref) => {
   );
 });
 
-export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, langMode, onPageChange }) => {
+export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, langMode, onPageChange, autoPlay, audioUrl, playAudio }) => {
   const bookRef = useRef<any>(null);
 
   // Helper to construct image path
@@ -45,6 +48,14 @@ export const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ story, styleId, 
           onPageChange(e.data); 
       }
   }, [onPageChange]);
+
+  // Auto-play Effect
+  // Trigger play when audioUrl changes (which happens on page change) IF autoPlay is enabled
+  React.useEffect(() => {
+      if (autoPlay && audioUrl) {
+          playAudio(audioUrl);
+      }
+  }, [audioUrl, autoPlay, playAudio]);
 
   // Calculate book dimensions
   const width = 1000;

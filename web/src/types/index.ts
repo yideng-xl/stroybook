@@ -2,6 +2,8 @@ export interface StoryPage {
   pageNumber: number;
   textZh: string;
   textEn: string;
+  audioUrlZh?: string;
+  audioUrlEn?: string;
 }
 
 export enum StoryStatus {

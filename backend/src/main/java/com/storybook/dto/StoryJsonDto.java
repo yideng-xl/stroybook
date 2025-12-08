@@ -20,5 +20,7 @@ public class StoryJsonDto {
         private int pageNumber;
         private String textZh;
         private String textEn;
+        private String audioUrlZh;
+        private String audioUrlEn;
     }
 }

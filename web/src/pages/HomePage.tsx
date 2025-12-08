@@ -70,6 +70,11 @@ const StoryCard: React.FC<{ story: Story | any; historyDuration?: number; isUser
                   {Math.ceil(historyDuration / 60)} 分钟
                 </div>
               )}
+              <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1 pointer-events-none">
+                <span className="bg-black/60 text-white text-[8px] font-bold px-1 rounded backdrop-blur-sm">
+                    作者: {story.userId || 'storybook'}
+                </span>
+              </div>
             </div>
             <div className="p-4 bg-white text-center">
               <h3 className="text-xl font-bold text-gray-800 group-hover:text-pink-500 transition-colors truncate">

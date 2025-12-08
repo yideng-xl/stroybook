@@ -3,8 +3,8 @@ package com.storybook.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp; // Added import
-import org.hibernate.annotations.UpdateTimestamp; // Added import
+import org.hibernate.annotations.CreationTimestamp; 
+import org.hibernate.annotations.UpdateTimestamp; 
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,23 +19,23 @@ public class Story {
 
     @Id
     @Column(nullable = false, unique = true)
-    private String id; // Use folder name as ID, e.g., "灰姑娘"
+    private String id; 
 
     private String titleZh;
     private String titleEn;
 
-    private String userId; // 关联用户ID
+    private String userId; 
 
     @Enumerated(EnumType.STRING)
-    private StoryStatus status; // 新增：故事生成状态
+    private StoryStatus status; 
     
     @Column(length = 1000)
-    private String generationPrompt; // 新增：用户输入的原始Prompt
+    private String generationPrompt; 
 
-    private String selectedStyleId; // 新增：用户选择的风格ID
+    private String selectedStyleId; 
     
     @Column(length = 2000)
-    private String errorMessage; // 新增：生成失败时的错误信息
+    private String errorMessage; 
     
     @Column(length = 2000)
     private String description;

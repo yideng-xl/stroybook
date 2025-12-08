@@ -97,7 +97,16 @@ const CreateStoryPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-brand-yellow/30 p-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-brand-yellow/30 p-4 relative">
+            {/* Back Navigation */}
+            <button 
+                onClick={() => navigate('/')} 
+                className="absolute top-6 left-6 flex items-center gap-2 text-brand-dark font-bold hover:text-brand-blue transition-colors bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm"
+            >
+                <span>🏠</span>
+                <span>返回书架</span>
+            </button>
+
             <div className="bg-white p-8 rounded-3xl shadow-xl border-4 border-brand-orange/50 max-w-2xl w-full">
                 <h1 className="text-4xl font-bold text-center text-brand-dark mb-8 font-sans drop-shadow-md">
                     开始创作你的故事 ✍️
