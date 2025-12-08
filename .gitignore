@@ -34,3 +34,7 @@ yarn-error.log*
 
 # System Files
 Thumbs.db
+
+# Application Data
+stories/
+stories-bak/
