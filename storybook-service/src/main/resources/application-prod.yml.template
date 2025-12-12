@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/storybook
+    username: storybook
+    password: <YOUR_DB_PASSWORD> # 修改这里
+  jpa:
+    hibernate:
+      ddl-auto: update # 生产环境建议改为 validate，或者使用 Flyway
+    show-sql: false
+
+jwt:
+  secret: <YOUR_JWT_SECRET_KEY> # 修改这里，必须是长字符串
+  expiration: 86400000
+
+storybook:
+  stories-path: /home/ubuntu/n8n/workspace/storybook/stories # 生产环境路径
+  n8n-webhook-url: <YOUR_N8N_WEBHOOK_URL>
+  n8n-redub-webhook-url: <YOUR_N8N_REDUB_WEBHOOK_URL>

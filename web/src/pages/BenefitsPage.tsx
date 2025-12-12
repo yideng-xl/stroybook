@@ -18,49 +18,66 @@ export const BenefitsPage: React.FC = () => {
 
                     {/* Comparison Table */}
                     <div className="p-8">
-                        <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="grid grid-cols-4 gap-4 text-center">
                             {/* Headers */}
                             <div className="col-span-1"></div>
-                            <div className="col-span-1 font-bold text-gray-500 text-xl pb-4">游客 (未登录)</div>
-                            <div className="col-span-1 font-bold text-yellow-600 text-xl pb-4 flex items-center justify-center gap-2">
-                                <span>👑 小小魔法师 (已登录)</span>
+                            <div className="col-span-1 font-bold text-gray-500 text-lg sm:text-xl pb-4">游客</div>
+                            <div className="col-span-1 font-bold text-blue-600 text-lg sm:text-xl pb-4 flex flex-col items-center justify-center">
+                                <span>🎈 注册会员</span>
+                                <span className="text-xs font-normal text-blue-400">免费</span>
+                            </div>
+                            <div className="col-span-1 font-bold text-yellow-600 text-lg sm:text-xl pb-4 flex flex-col items-center justify-center">
+                                <span>👑 Pro会员</span>
+                                <span className="text-xs font-normal text-yellow-400">付费升级</span>
                             </div>
 
-                            {/* Row 1 */}
-                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-4">阅读故事</div>
-                            <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-500">
+                            {/* Row 1: Read Stories */}
+                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-2 md:pr-4">阅读故事</div>
+                            <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-500 text-sm md:text-base">
                                 每日限 2 本
                             </div>
-                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-green-600 font-bold border-2 border-yellow-200 shadow-sm transform scale-105">
-                                <Check size={20} className="mr-1"/> 无限畅读
+                            <div className="col-span-1 bg-blue-50 rounded-xl py-4 flex items-center justify-center text-blue-600 font-bold">
+                                <Check size={20} className="mr-1" /> 无限
+                            </div>
+                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm">
+                                <Check size={20} className="mr-1" /> 无限
                             </div>
 
-                            {/* Row 2 */}
-                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-4">阅读历史</div>
+                            {/* Row 2: Reading History */}
+                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-2 md:pr-4">阅读历史</div>
                             <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-400">
-                                <X size={20}/>
+                                <X size={20} />
                             </div>
-                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm transform scale-105">
-                                <Check size={20} className="mr-1"/> 云端同步
+                            <div className="col-span-1 bg-blue-50 rounded-xl py-4 flex items-center justify-center text-blue-600 font-bold">
+                                <Check size={20} />
+                            </div>
+                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm">
+                                <Check size={20} />
                             </div>
 
-                            {/* Row 3 */}
-                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-4">我的书架</div>
+                            {/* Row 3: Create Story */}
+                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-2 md:pr-4">创作故事</div>
                             <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-400">
-                                <X size={20}/>
+                                <X size={20} />
                             </div>
-                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm transform scale-105">
-                                <Check size={20} className="mr-1"/> 永久保存进度
+                            <div className="col-span-1 bg-blue-50 rounded-xl py-4 flex items-center justify-center text-blue-600 font-bold text-sm md:text-base">
+                                每日 2 本
+                            </div>
+                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm text-sm md:text-base">
+                                每日 9 本
                             </div>
 
-                             {/* Row 4 */}
-                             <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-4">创作故事</div>
-                             <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-400">
-                                 <X size={20}/>
-                             </div>
-                             <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm transform scale-105">
-                                 <span className="text-xs bg-yellow-200 px-2 py-1 rounded-full text-yellow-800">即将上线</span>
-                             </div>
+                            {/* Row 4: Voice Clone */}
+                            <div className="col-span-1 font-bold text-gray-700 py-4 flex items-center justify-end pr-2 md:pr-4">声音克隆</div>
+                            <div className="col-span-1 bg-gray-50 rounded-xl py-4 flex items-center justify-center text-gray-400">
+                                <X size={20} />
+                            </div>
+                            <div className="col-span-1 bg-blue-50 rounded-xl py-4 flex items-center justify-center text-gray-400">
+                                <X size={20} />
+                            </div>
+                            <div className="col-span-1 bg-yellow-50 rounded-xl py-4 flex items-center justify-center text-yellow-700 font-bold border-2 border-yellow-200 shadow-sm">
+                                <Check size={20} className="mr-1" /> 解锁
+                            </div>
 
                         </div>
                     </div>

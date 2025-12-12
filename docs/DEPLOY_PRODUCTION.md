@@ -55,9 +55,9 @@ exit
 mkdir -p /home/ubuntu/storybook-server
 ```
 
-1.  **上传 JAR 包**: 将构建好的 `backend/target/storybook-service-0.0.1-SNAPSHOT.jar` 上传到该目录。
+1.  **上传 JAR 包**: 将构建好的 `storybook-service/target/storybook-service-0.0.1-SNAPSHOT.jar` 上传到该目录。
 2.  **创建生产配置**: 
-    在服务器该目录下创建一个名为 `application-prod.yml` 的文件。您可以参考源码中的 `backend/src/main/resources/application-prod.yml.template`。
+    在服务器该目录下创建一个名为 `application-prod.yml` 的文件。您可以参考源码中的 `storybook-service/src/main/resources/application-prod.yml.template`。
 
     **`application-prod.yml` 内容示例 (务必修改敏感信息):**
     ```yaml

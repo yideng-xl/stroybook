@@ -35,8 +35,8 @@
 ## 3. 技术规范 (Technical Specifications)
 
 ### 3.1 Backend
-- **实体扩展**: `backend/src/main/java/com/storybook/entity/StoryPage.java` 新增 `audioUrlZh: string`, `audioUrlEn: string`。
-- **同步逻辑**: `backend/src/main/java/com/storybook/service/impl/StorySyncServiceImpl.java` 修改 `syncStoryFilesInternal`，根据 `storyId` 目录查找音频文件并更新 `StoryPage`。
+- **实体扩展**: `storybook-service/src/main/java/com/storybook/entity/StoryPage.java` 新增 `audioUrlZh: string`, `audioUrlEn: string`。
+- **同步逻辑**: `storybook-service/src/main/java/com/storybook/service/impl/StorySyncServiceImpl.java` 修改 `syncStoryFilesInternal`，根据 `storyId` 目录查找音频文件并更新 `StoryPage`。
 
 ### 3.2 Frontend
 - **音频管理**: 封装一个 `useAudioPlayer` hook 或 `AudioPlayer` 组件，管理 `HTMLAudioElement` 的状态和播放逻辑。

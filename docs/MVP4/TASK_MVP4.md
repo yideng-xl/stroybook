@@ -3,7 +3,7 @@
 ## 1. 后端功能扩展 (Backend)
 
 - [ ] **TASK-BE-01: 扩展 StoryPage 实体与 Repository**
-    - **Input**: 现有 `backend/src/main/java/com/storybook/entity/StoryPage.java`。
+    - **Input**: 现有 `storybook-service/src/main/java/com/storybook/entity/StoryPage.java`。
     - **Action**: 
         - 在 `StoryPage` 实体中添加 `audioUrlZh` 和 `audioUrlEn` 字段 (`String` 类型)。
         - 如果需要，更新 `StoryPageRepository` (通常 JPA 自动支持，无需额外修改)。

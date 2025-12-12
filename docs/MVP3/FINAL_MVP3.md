@@ -18,7 +18,7 @@ MVP3 成功实现了用户驱动的故事创作功能，并通过后端 API 与 
 - **过滤**：实现了对“我的创作”和“精选故事”的双重过滤（搜索词 + 风格）。
 
 ### 2.3 后端 API (Backend)
-- **`Story` 实体扩展**：`backend/src/main/java/com/storybook/entity/Story.java` 新增 `userId`, `status`, `generationPrompt`, `selectedStyleId`, `errorMessage`, `createdAt`, `updatedAt` 字段。
+- **`Story` 实体扩展**：`storybook-service/src/main/java/com/storybook/entity/Story.java` 新增 `userId`, `status`, `generationPrompt`, `selectedStyleId`, `errorMessage`, `createdAt`, `updatedAt` 字段。
 - **`StoryRepository` 扩展**：新增多种查询方法，支持按 `userId`、`status` 和 `keyword` 组合查询，并支持按 `createdAt` 倒序排列。
 - **`POST /api/stories/generate`**：
     - 接收 `GenerateStoryRequest` (prompt, style)。

@@ -3,7 +3,7 @@
 ## 1. 后端核心功能扩展 (Backend Core)
 
 - [ ] **TASK-BE-01: 扩展 Story 实体与 Repository**
-    - **Input**: 现有 `backend/src/main/java/com/storybook/entity/Story.java`。
+    - **Input**: 现有 `storybook-service/src/main/java/com/storybook/entity/Story.java`。
     - **Action**: 
         - 在 `Story` 实体中添加 `userId`, `status` (Enum), `generationPrompt`, `selectedStyleId`, `errorMessage` 字段。
         - 添加 `createdAt`, `updatedAt` 时间戳字段。

@@ -5,7 +5,7 @@ module.exports = {
       script: "java",
       args: [
         "-jar",
-        "backend/target/storybook-service-0.0.1-SNAPSHOT.jar",
+        "storybook-service/target/storybook-service-0.0.1-SNAPSHOT.jar",
         "--spring.profiles.active=prod"
       ],
       watch: false,

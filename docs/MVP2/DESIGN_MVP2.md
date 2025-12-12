@@ -100,7 +100,7 @@ erDiagram
 
 ## 5. 项目结构 (Backend)
 ```
-backend/
+storybook-service/
 ├── src/main/java/com/storybook/
 │   ├── config/ (Security, WebMvc)
 │   ├── controller/

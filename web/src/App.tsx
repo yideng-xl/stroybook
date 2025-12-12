@@ -8,6 +8,9 @@ import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { Bookshelf } from './pages/Bookshelf';
 import { BenefitsPage } from './pages/BenefitsPage';
+import MyVoicesPage from './pages/MyVoicesPage';
+import { MemberInfoPage } from './pages/MemberInfoPage';
+import { PaymentPage } from './pages/PaymentPage';
 
 import { LoginModal } from './components/LoginModal';
 
@@ -21,11 +24,14 @@ function AppContent() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/read/:id" element={<ReadPage />} />
                     <Route path="/create" element={<CreateStoryPage />} />
+                    <Route path="/my-voices" element={<MyVoicesPage />} />
                     {/* /login route removed or kept as fallback? Let's keep it but ideally use modal. */}
-                    <Route path="/login" element={<Login />} /> 
+                    <Route path="/login" element={<Login />} />
                     <Route path="/change-password" element={<ChangePassword />} />
                     <Route path="/bookshelf" element={<Bookshelf />} />
                     <Route path="/benefits" element={<BenefitsPage />} />
+                    <Route path="/member-info" element={<MemberInfoPage />} />
+                    <Route path="/payment" element={<PaymentPage />} />
                 </Routes>
             </BrowserRouter>
             <LoginModal />
@@ -34,13 +40,13 @@ function AppContent() {
 }
 
 function App() {
-  return (
-    <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-            <AppContent />
-        </QueryClientProvider>
-    </AuthProvider>
-  );
+    return (
+        <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+                <AppContent />
+            </QueryClientProvider>
+        </AuthProvider>
+    );
 }
 
 export default App;

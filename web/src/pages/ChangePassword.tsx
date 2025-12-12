@@ -50,11 +50,11 @@ export const ChangePassword: React.FC = () => {
 
     return (
         <Layout>
-            <div className="min-h-screen flex items-center justify-center pt-20">
+            <div className="h-[calc(100vh-64px)] flex items-center justify-center">
                 <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border-4 border-blue-200 relative z-10">
                     <button onClick={() => navigate('/')} className="mb-4 text-blue-500 font-bold">← 返回</button>
                     <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">修改密码 🔑</h2>
-                    
+
                     {msg && (
                         <div className={`p-3 rounded mb-4 text-sm font-bold ${isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                             {msg}

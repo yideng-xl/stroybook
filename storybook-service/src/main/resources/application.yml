@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: storybook-backend
+  datasource:
+    url: jdbc:postgresql://192.168.100.100:15432/storybook
+    username: storybook
+    password: StoryBook123!
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  
+# JWT Configuration
+jwt:
+  secret: '404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970' # Must be 256-bit+
+  expiration: 86400000 # 24 hours
+
+# Application Specific Config
+storybook:
+  stories-path: ../stories # Relative to backend/ dir or absolute path
+  n8n-webhook-url: http://localhost:5678/webhook-test/storybook-generate # Placeholder
+  n8n-redub-webhook-url: http://localhost:5678/webhook-test/storybook-redub # New Webhook for Voice Cloning

@@ -167,7 +167,7 @@ sequenceDiagram
 
 ### 4.1 Backend
 ```
-backend/
+storybook-service/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/storybook/

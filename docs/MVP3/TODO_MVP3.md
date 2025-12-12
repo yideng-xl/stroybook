@@ -5,7 +5,7 @@
 ## 1. 部署与运维
 
 ### 1.1 `application.yml` 配置
-- **N8N Webhook URL**：请务必更新 `backend/src/main/resources/application.yml` 中的 `storybook.n8n-webhook-url`，将其替换为您的生产环境 N8N Webhook URL。
+- **N8N Webhook URL**：请务必更新 `storybook-service/src/main/resources/application.yml` 中的 `storybook.n8n-webhook-url`，将其替换为您的生产环境 N8N Webhook URL。
 - **数据库配置**：确认生产环境的 `spring.datasource` 配置。
 
 ### 1.2 权限与安全

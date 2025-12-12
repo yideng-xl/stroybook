@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../context/AuthContext';
 import { useStoryManifest } from '../hooks/useStoryManifest';
-import { StoryStyle } from '../types';
+import { StoryStyle, UserVoice } from '../types';
+import { getMyVoices } from '../api/voices';
 
 const CreateStoryPage: React.FC = () => {
     const navigate = useNavigate();
@@ -12,6 +13,12 @@ const CreateStoryPage: React.FC = () => {
 
     const [prompt, setPrompt] = useState('');
     const [selectedStyle, setSelectedStyle] = useState('');
+    const [selectedVoice, setSelectedVoice] = useState<number | ''>(''); // Voice ID
+    const [userVoices, setUserVoices] = useState<UserVoice[]>([]);
+
+    // State for Pending Modal
+    const [showPendingModal, setShowPendingModal] = useState(false);
+
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -29,9 +36,11 @@ const CreateStoryPage: React.FC = () => {
 
     useEffect(() => {
         if (!token) {
-            // Optionally, redirect to login if not authenticated
             navigate('/login');
             alert('请先登录才能创作故事。');
+        } else {
+            // Load user voices
+            getMyVoices().then(setUserVoices).catch(err => console.error("Failed to load voices", err));
         }
     }, [token, navigate]);
 
@@ -54,13 +63,18 @@ const CreateStoryPage: React.FC = () => {
 
         setIsLoading(true);
         try {
+            const requestBody: any = { prompt, style: selectedStyle };
+            if (selectedVoice) {
+                requestBody.voiceId = selectedVoice;
+            }
+
             const response = await fetch('/api/stories/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ prompt, style: selectedStyle }),
+                body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
@@ -99,8 +113,8 @@ const CreateStoryPage: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-brand-yellow/30 p-4 relative">
             {/* Back Navigation */}
-            <button 
-                onClick={() => navigate('/')} 
+            <button
+                onClick={() => navigate('/')}
                 className="absolute top-6 left-6 flex items-center gap-2 text-brand-dark font-bold hover:text-brand-blue transition-colors bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm"
             >
                 <span>🏠</span>
@@ -154,6 +168,38 @@ const CreateStoryPage: React.FC = () => {
                         </select>
                     </div>
 
+                    <div>
+                        <label htmlFor="voice" className="block text-lg font-bold text-brand-dark mb-2">
+                            朗读声音 (可选):
+                        </label>
+                        <div className="flex gap-2">
+                            <select
+                                id="voice"
+                                className={twMerge(
+                                    "flex-1 p-4 rounded-xl border-2 border-brand-blue/30 focus:border-brand-blue focus:ring-brand-blue/50 outline-none appearance-none",
+                                    "text-lg font-medium bg-blue-50/20 shadow-inner cursor-pointer transition-all"
+                                )}
+                                value={selectedVoice}
+                                onChange={(e) => setSelectedVoice(Number(e.target.value))}
+                                disabled={isLoading}
+                            >
+                                <option value="">默认 (标准语音)</option>
+                                {userVoices.map((voice) => (
+                                    <option key={voice.id} value={voice.id}>
+                                        {voice.name} (我的克隆)
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => setShowPendingModal(true)}
+                                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-xl font-bold hover:bg-purple-200 transition-colors"
+                            >
+                                管理声音
+                            </button>
+                        </div>
+                    </div>
+
                     {error && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative" role="alert">
                             <strong className="font-bold">错误! </strong>
@@ -174,6 +220,53 @@ const CreateStoryPage: React.FC = () => {
                     </button>
                 </form>
             </div>
+
+            {/* Voice Pending Modal */}
+            {showPendingModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPendingModal(false)}></div>
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative z-10 text-center animate-bounce-in border-4 border-yellow-300">
+                        <button onClick={() => setShowPendingModal(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">×</button>
+                        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-600">
+                            <span className="text-3xl">🎤</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">功能待上线</h3>
+                        <p className="text-gray-600 mb-6">声音克隆功能正在加急开发中，敬请期待！</p>
+                        <button onClick={() => setShowPendingModal(false)} className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-full shadow-md">
+                            我知道了
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Upgrade Modal */}
+            {error && error.includes('Daily limit reached') && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setError(null)}></div>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative z-10 text-center border-4 border-yellow-300 animate-bounce-in">
+                        <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-4xl">👑</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">今日免费额度已用完</h2>
+                        <p className="text-gray-600 mb-6">您今天已经创作了 2 个故事啦！升级 Pro 会员，每天可以创作 9 个故事哦！</p>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => navigate('/payment')}
+                                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-105 transition-transform"
+                            >
+                                立即升级 Pro 🚀
+                            </button>
+                            <button
+                                onClick={() => setError(null)}
+                                className="text-gray-400 hover:text-gray-600 font-medium text-sm"
+                            >
+                                明天再来
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

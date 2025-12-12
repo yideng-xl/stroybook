@@ -20,6 +20,14 @@ export interface StoryStyle {
   coverImage: string;
 }
 
+export interface UserVoice {
+  id: number;
+  userId: number;
+  name: string;
+  provider: string;
+  createdAt: string;
+}
+
 // Comprehensive Story interface from backend entity
 export interface Story {
   id: string;
@@ -31,11 +39,14 @@ export interface Story {
   selectedStyleId?: string;
   errorMessage?: string;
   description?: string;
+  customVoiceId?: number; // MVP5: ID of custom voice
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
   styles: StoryStyle[];
   pages?: StoryPage[]; // Optional for list view, full detail has it
 }
+
+export type StoryMetadata = Story;
 
 export interface StoryManifestItem {
   id: string;
