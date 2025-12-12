@@ -84,7 +84,7 @@ export const BenefitsPage: React.FC = () => {
 
                     {/* Footer / CTA */}
                     <div className="bg-yellow-50 p-8 text-center border-t-4 border-yellow-200">
-                        <button onClick={openLoginModal} className="inline-block bg-yellow-400 hover:bg-yellow-500 text-white text-xl font-bold py-3 px-12 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95">
+                        <button onClick={() => openLoginModal('register')} className="inline-block bg-yellow-400 hover:bg-yellow-500 text-white text-xl font-bold py-3 px-12 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95">
                             立即加入我们 🚀
                         </button>
                         <div className="mt-4">
