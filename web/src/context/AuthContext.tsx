@@ -8,12 +8,13 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    token: string | null; 
+    token: string | null;
     login: (token: string, user: User) => void;
     logout: () => void;
     isAuthenticated: boolean;
     isLoginModalOpen: boolean;
-    openLoginModal: () => void;
+    loginModalMode: 'login' | 'register';
+    openLoginModal: (mode?: 'login' | 'register') => void;
     closeLoginModal: () => void;
 }
 
@@ -23,8 +24,9 @@ export const authService = {
     _user: null as User | null,
     _token: localStorage.getItem('token'),
     _isLoginModalOpen: false,
+    _loginModalMode: 'login' as 'login' | 'register',
     _listeners: [] as ((user: User | null, token: string | null) => void)[],
-    _modalListeners: [] as ((isOpen: boolean) => void)[],
+    _modalListeners: [] as ((isOpen: boolean, mode: 'login' | 'register') => void)[],
 
     init() {
         const savedUser = localStorage.getItem('user');
@@ -54,13 +56,15 @@ export const authService = {
         }
     },
 
-    openLoginModal() {
+    openLoginModal(mode: 'login' | 'register' = 'login') {
         this._isLoginModalOpen = true;
+        this._loginModalMode = mode;
         this._notifyModalListeners();
     },
 
     closeLoginModal() {
         this._isLoginModalOpen = false;
+        this._loginModalMode = 'login'; // Reset to default
         this._notifyModalListeners();
     },
 
@@ -72,9 +76,9 @@ export const authService = {
         };
     },
 
-    subscribeModal(listener: (isOpen: boolean) => void) {
+    subscribeModal(listener: (isOpen: boolean, mode: 'login' | 'register') => void) {
         this._modalListeners.push(listener);
-        listener(this._isLoginModalOpen); // Notify immediately
+        listener(this._isLoginModalOpen, this._loginModalMode); // Notify immediately
         return () => {
             this._modalListeners = this._modalListeners.filter(l => l !== listener);
         };
@@ -85,13 +89,14 @@ export const authService = {
     },
 
     _notifyModalListeners() {
-        this._modalListeners.forEach(listener => listener(this._isLoginModalOpen));
+        this._modalListeners.forEach(listener => listener(this._isLoginModalOpen, this._loginModalMode));
     },
 
     get user() { return this._user; },
     get token() { return this._token; },
     get isAuthenticated() { return !!this._user; },
-    get isLoginModalOpen() { return this._isLoginModalOpen; }
+    get isLoginModalOpen() { return this._isLoginModalOpen; },
+    get loginModalMode() { return this._loginModalMode; }
 };
 
 authService.init(); // Initialize the service when the module loads
@@ -100,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [loginModalMode, setLoginModalMode] = useState<'login' | 'register'>('login');
 
     useEffect(() => {
         // Sync internal state with authService on mount
@@ -107,8 +113,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(u);
             setToken(t);
         });
-        const unsubscribeModal = authService.subscribeModal((isOpen) => {
+        const unsubscribeModal = authService.subscribeModal((isOpen, mode) => {
             setIsLoginModalOpen(isOpen);
+            setLoginModalMode(mode);
         });
         return () => { unsubscribe(); unsubscribeModal(); };
     }, []);
@@ -120,9 +127,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout: authService.logout.bind(authService),
         isAuthenticated: !!user,
         isLoginModalOpen: isLoginModalOpen,
+        loginModalMode: loginModalMode,
         openLoginModal: authService.openLoginModal.bind(authService),
         closeLoginModal: authService.closeLoginModal.bind(authService),
-    }), [user, token, isLoginModalOpen]);
+    }), [user, token, isLoginModalOpen, loginModalMode]);
 
     return (
         <AuthContext.Provider value={contextValue}>

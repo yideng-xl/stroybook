@@ -19,9 +19,13 @@ const HomePage: React.FC = () => {
         enabled: !!user
     });
 
-    const filteredManifest = manifest.filter(story =>
-        (story.titleZh?.includes(searchTerm) || story.titleEn?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredManifest = manifest.filter(story => {
+        // Exclude my stories from the main list if logged in
+        if (user && story.userId === user.username) {
+            return false;
+        }
+        return (story.titleZh?.includes(searchTerm) || story.titleEn?.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
 
     return (
         <Layout showFooter>

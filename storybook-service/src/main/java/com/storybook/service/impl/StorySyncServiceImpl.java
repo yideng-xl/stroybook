@@ -11,19 +11,18 @@ import com.storybook.repository.StoryRepository;
 import com.storybook.service.StorySyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,12 +34,16 @@ public class StorySyncServiceImpl implements StorySyncService {
     private final StoryPageRepository storyPageRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    @Lazy
+    private StorySyncService self;
+
     @Value("${storybook.stories-path:../stories}")
     private String storiesPath;
 
     @Override
     @EventListener(ApplicationReadyEvent.class) // Auto-sync on startup
-    @Transactional
+    // Removed @Transactional to avoid global rollback if one story fails
     public void syncStories() {
         log.info("Starting full story synchronization from path: {}", storiesPath);
         File rootDir = new File(storiesPath);
@@ -56,44 +59,14 @@ public class StorySyncServiceImpl implements StorySyncService {
             return;
         }
 
-        List<String> foundStoryIds = new ArrayList<>();
         for (File folder : storyFolders) {
             String storyId = folder.getName();
-            foundStoryIds.add(storyId);
-            log.info("Attempting to sync story folder: {}", storyId);
             try {
-                // For full sync, we try to infer selectedStyleId if not set in DB
-                Optional<Story> existingStory = storyRepository.findById(storyId);
-                String styleToSync = null;
-
-                if (existingStory.isPresent() && existingStory.get().getSelectedStyleId() != null) {
-                    styleToSync = existingStory.get().getSelectedStyleId();
-                } else {
-                    // Try to find a style subfolder if no selected style is present in DB
-                    File[] styleSubFolders = folder.listFiles(File::isDirectory);
-                    if (styleSubFolders != null && styleSubFolders.length > 0) {
-                        styleToSync = styleSubFolders[0].getName(); // Take the first one found
-                        
-                        Story story;
-                        if (existingStory.isPresent()) {
-                            story = existingStory.get();
-                        } else {
-                            story = new Story();
-                            story.setId(storyId);
-                            story.setStatus(StoryStatus.PUBLISHED); // Assume existing files are published
-                        }
-                        story.setSelectedStyleId(styleToSync);
-                        storyRepository.save(story);
-                    }
-                }
-
-                if (styleToSync != null) {
-                    syncStoryFilesInternal(storyId, styleToSync);
-                } else {
-                    log.warn("Skipping full sync for story {}: no selectedStyleId in DB and no style subfolders found.", storyId);
-                }
+                // Call self-injected proxy to ensure independent transaction
+                self.syncAndInitializeStory(storyId);
             } catch (Exception e) {
                 log.error("Error during full sync for story {}: {}", storyId, e.getMessage());
+                // Continue to next story
             }
         }
 
@@ -102,10 +75,48 @@ public class StorySyncServiceImpl implements StorySyncService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void syncAndInitializeStory(String storyId) {
+        log.info("Attempting to sync and init story: {}", storyId);
+        File folder = new File(storiesPath, storyId);
+
+        // For full sync, we try to infer selectedStyleId if not set in DB
+        Optional<Story> existingStory = storyRepository.findById(storyId);
+        String styleToSync = null;
+
+        if (existingStory.isPresent() && existingStory.get().getSelectedStyleId() != null) {
+            styleToSync = existingStory.get().getSelectedStyleId();
+        } else {
+            // Try to find a style subfolder if no selected style is present in DB
+            File[] styleSubFolders = folder.listFiles(File::isDirectory);
+            if (styleSubFolders != null && styleSubFolders.length > 0) {
+                styleToSync = styleSubFolders[0].getName(); // Take the first one found
+
+                Story story;
+                if (existingStory.isPresent()) {
+                    story = existingStory.get();
+                } else {
+                    story = new Story();
+                    story.setId(storyId);
+                    story.setStatus(StoryStatus.PUBLISHED); // Assume existing files are published
+                }
+                story.setSelectedStyleId(styleToSync);
+                storyRepository.save(story);
+            }
+        }
+
+        if (styleToSync != null) {
+            syncStoryFilesInternal(storyId, styleToSync);
+        } else {
+            log.warn("Skipping full sync for story {}: no selectedStyleId in DB and no style subfolders found.", storyId);
+        }
+    }
+
+    @Override
     @Transactional
     public void syncStoryFiles(String storyId) {
         log.info("Starting single story synchronization for storyId: {}", storyId);
-        
+
         // 1. Fetch Story to get selectedStyleId
         Story story = storyRepository.findById(storyId).orElse(null);
         if (story == null) {
@@ -115,20 +126,18 @@ public class StorySyncServiceImpl implements StorySyncService {
 
         String styleId = story.getSelectedStyleId();
         if (styleId == null) {
-             // Fallback: try to find style folder if null (similar to full sync logic)
-             File storyDir = new File(storiesPath, storyId);
-             if (storyDir.exists() && storyDir.isDirectory()) {
-                 File[] styleSubFolders = storyDir.listFiles(File::isDirectory);
-                 if (styleSubFolders != null && styleSubFolders.length > 0) {
-                     styleId = styleSubFolders[0].getName();
-                     story.setSelectedStyleId(styleId); // Update style id
-                     // Don't save yet, syncStoryFilesInternal will handle saving or we save here?
-                     // syncStoryFilesInternal re-fetches story. Let's save here.
-                     storyRepository.save(story);
-                 }
-             }
+            // Fallback: try to find style folder if null (similar to full sync logic)
+            File storyDir = new File(storiesPath, storyId);
+            if (storyDir.exists() && storyDir.isDirectory()) {
+                File[] styleSubFolders = storyDir.listFiles(File::isDirectory);
+                if (styleSubFolders != null && styleSubFolders.length > 0) {
+                    styleId = styleSubFolders[0].getName();
+                    story.setSelectedStyleId(styleId); // Update style id
+                    storyRepository.save(story);
+                }
+            }
         }
-        
+
         if (styleId == null) {
             log.error("Cannot sync story {}: No selected style ID and no style subfolder found.", storyId);
             updateStoryStatusAndError(storyId, StoryStatus.FAILED, "No style found for story.");
@@ -147,12 +156,11 @@ public class StorySyncServiceImpl implements StorySyncService {
             return;
         }
         Story story = optionalStory.get();
-        Long customVoiceId = story.getCustomVoiceId(); // Folder name is based on customVoiceId as per logic, but N8N might use userId. Let's check requirements.
         
         // Requirement said: "stroyid下创建一个userid的文件夹"
         // So we look for: stories/{storyId}/{userId}
         File customAudioDir = new File(storiesPath + File.separator + storyId + File.separator + userId);
-        
+
         if (!customAudioDir.exists() || !customAudioDir.isDirectory()) {
             log.warn("Custom audio directory not found: {}", customAudioDir.getAbsolutePath());
             story.setAudioStatus(StoryStatus.FAILED);
@@ -169,16 +177,14 @@ public class StorySyncServiceImpl implements StorySyncService {
                 // Assuming only Chinese for now as per N8N spec
                 String audioFileName = "page-" + page.getPageNumber() + ".mp3";
                 File audioFile = new File(customAudioDir, audioFileName);
-                
+
                 if (audioFile.exists()) {
-                    // URL Format: /stories/{storyId}/{userId}/{filename}
                     // Need to ensure file-server serves this structure.
-                    // Assuming file-server maps /stories to the stories root.
                     page.setCustomAudioUrlZh("/stories/" + storyId + "/" + userId + "/" + audioFileName);
                 }
             }
         }
-        
+
         story.setAudioStatus(StoryStatus.PUBLISHED); // Using PUBLISHED to mean Completed for audio status
         storyRepository.save(story);
         log.info("Custom audio sync completed for story: {}", storyId);
@@ -187,7 +193,7 @@ public class StorySyncServiceImpl implements StorySyncService {
     private void syncStoryFilesInternal(String storyId, String styleId) {
         // The story.json is now directly under the storyId folder, not a style subfolder.
         File storyJsonFile = new File(storiesPath + File.separator + storyId, "story.json");
-        
+
         log.info("Attempting to sync story JSON file from path: {}", storyJsonFile.getAbsolutePath());
 
         if (!storyJsonFile.exists()) {
@@ -201,7 +207,7 @@ public class StorySyncServiceImpl implements StorySyncService {
 
             // Fetch story again to ensure latest state and avoid detached entity issues
             Story story = storyRepository.findById(storyId).orElseThrow(() -> new RuntimeException("Story not found during internal sync: " + storyId));
-            
+
             story.setTitleZh(dto.getTitleZh());
             story.setTitleEn(dto.getTitleEn());
             story.setDescription(dto.getFullStory() != null && !dto.getFullStory().isBlank() ? dto.getFullStory().substring(0, Math.min(dto.getFullStory().length(), 200)) : "");
@@ -217,23 +223,21 @@ public class StorySyncServiceImpl implements StorySyncService {
                 page.setPageNumber(pageDto.getPageNumber());
                 page.setTextZh(pageDto.getTextZh());
                 page.setTextEn(pageDto.getTextEn());
-                // Image URL still depends on selectedStyleId
-                page.setImageUrl(getCoverImagePath(storyId, styleId, pageDto.getPageNumber()));
                 
+                page.setImageUrl(getCoverImagePath(storyId, styleId, pageDto.getPageNumber()));
+
                 // Audio Logic
                 // 1. Check file system existence
-                // storiesPath is typically "../stories" or absolute path to stories root
                 String audioFileNameZh = "page-" + pageDto.getPageNumber() + "-zh.mp3";
                 File audioFileZh = new File(storiesPath + File.separator + storyId, audioFileNameZh);
-                
+
                 if (audioFileZh.exists()) {
-                    // 2. Set Web URL path
                     page.setAudioUrlZh("/stories/" + storyId + "/" + audioFileNameZh);
                 }
-                
+
                 String audioFileNameEn = "page-" + pageDto.getPageNumber() + "-en.mp3";
                 File audioFileEn = new File(storiesPath + File.separator + storyId, audioFileNameEn);
-                
+
                 if (audioFileEn.exists()) {
                     page.setAudioUrlEn("/stories/" + storyId + "/" + audioFileNameEn);
                 }
@@ -241,17 +245,17 @@ public class StorySyncServiceImpl implements StorySyncService {
                 story.getPages().add(page);
             });
 
-            // Clear and recreate styles (assuming one generated style per story for now)
+            // Clear and recreate styles
             story.getStyles().clear();
             StoryStyle newStyle = new StoryStyle(
                 story,
-                styleId, // Using styleId from path
+                styleId,
                 dto.getStyleEn() != null && !dto.getStyleEn().isBlank() ? dto.getStyleEn() : styleId,
                 getCoverImagePath(storyId, styleId, 1) // Cover is always page 1 of the selected style
             );
             story.getStyles().add(newStyle);
 
-            storyRepository.save(story); // Saves story, cascades to pages and styles
+            storyRepository.save(story);
             log.info("Story {} (style {}) synced successfully.", storyId, styleId);
 
         } catch (IOException e) {
@@ -287,10 +291,4 @@ public class StorySyncServiceImpl implements StorySyncService {
     private String getCoverImagePath(String storyId, String styleName) {
         return getCoverImagePath(storyId, styleName, 1);
     }
-
-    // Renamed from processStoryFolder to be more explicit about internal use
-    // This method is no longer used by syncStories directly, syncStories will call syncStoryFilesInternal
-    // private void processStoryFolder(File folder) {
-    //     // ... original logic, now moved into syncStoryFilesInternal
-    // }
 }

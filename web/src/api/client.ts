@@ -35,6 +35,7 @@ export const api = {
     stories: {
         list: (keyword?: string, status?: string) =>
             apiClient.get('/stories', { params: { keyword, status } }),
+        listMy: (keyword?: string) => apiClient.get('/stories', { params: { keyword, mine: true } }),
         get: (id: string) => apiClient.get(`/stories/${id}`),
         getContent: (id: string, guestId?: string) => apiClient.get(`/stories/${id}/content`, {
             headers: guestId ? { 'X-Guest-Id': guestId } : {}

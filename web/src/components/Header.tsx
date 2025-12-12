@@ -88,13 +88,13 @@ export const Header: React.FC = () => {
                     ) : (
                         <div className="flex items-center space-x-4">
                             <button
-                                onClick={openLoginModal}
+                                onClick={() => openLoginModal('login')}
                                 className="text-gray-600 hover:text-yellow-600 font-bold"
                             >
                                 登录
                             </button>
                             <button
-                                onClick={openLoginModal}
+                                onClick={() => openLoginModal('register')}
                                 className="px-6 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-full font-bold shadow-md transition-all transform hover:-translate-y-0.5"
                             >
                                 免费注册
@@ -130,8 +130,8 @@ export const Header: React.FC = () => {
                             </>
                         ) : (
                             <div className="flex flex-col space-y-3 pt-2">
-                                <button onClick={openLoginModal} className="w-full py-2 border border-yellow-400 text-yellow-600 rounded-lg font-bold">登录</button>
-                                <button onClick={openLoginModal} className="w-full py-2 bg-yellow-400 text-white rounded-lg font-bold">注册</button>
+                                <button onClick={() => openLoginModal('login')} className="w-full py-2 border border-yellow-400 text-yellow-600 rounded-lg font-bold">登录</button>
+                                <button onClick={() => openLoginModal('register')} className="w-full py-2 bg-yellow-400 text-white rounded-lg font-bold">注册</button>
                             </div>
                         )}
                     </nav>

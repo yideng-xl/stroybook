@@ -13,7 +13,7 @@ interface ScrollViewerProps {
     playAudio: (url: string) => Promise<void>;
 }
 
-export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode, onPageChange, autoPlay, playAudio }) => {
+export const ScrollViewer: React.FC<ScrollViewerProps> = ({ story, styleId, langMode, onPageChange, playAudio }) => {
     // ScrollViewer is simpler; "onPageChange" is less strict, typically based on visibility.
     // For MVP, we can treat each block as a page.
 

@@ -46,6 +46,31 @@ GRANT ALL PRIVILEGES ON DATABASE storybook TO storybook;
 exit
 ```
 
+### 2.4 配置远程连接 (可选 - 如需使用 Navicat 等工具)
+如果您需要从本地电脑远程连接服务器上的数据库，请按以下步骤配置（该操作具有一定安全风险，建议配合云防火墙仅开放给特定 IP）：
+
+**Step 1: 修改监听地址**
+编辑 `/etc/postgresql/{version}/main/postgresql.conf`：
+```bash
+# 查找 listen_addresses，取消注释并修改为 '*'
+listen_addresses = '*'
+```
+
+**Step 2: 允许远程 IP 访问**
+编辑 `/etc/postgresql/{version}/main/pg_hba.conf`，在文件末尾添加：
+```text
+# 允许所有 IP 使用密码连接（生产环境建议将 0.0.0.0/0 替换为您的具体 IP）
+host    all             all             0.0.0.0/0               scram-sha-256
+```
+*(注：旧版本 PostgreSQL 请将 `scram-sha-256` 替换为 `md5`)*
+
+**Step 3: 重启服务**
+```bash
+sudo service postgresql restart
+```
+**Step 4: 云安全组设置**
+请确保腾讯云/阿里云的安全组规则中，入站规则已开放 TCP:5432 端口。
+
 ---
 
 ## 3. 后端部署 (Spring Boot)
@@ -141,7 +166,19 @@ ls -l /usr/share/nginx/storybook/stories
 ```
 
 ### 4.3 Nginx 配置示例
-编辑 `/etc/nginx/sites-available/storybook` (或 default):
+**重要提示：关于 403 Forbidden 错误**
+如果访问图片或 API 遇到 403 错误，通常是因为 Nginx 用户 (`www-data`) 没有权限访问 `/home/ubuntu` 目录。
+**最简单的修复方法**：修改 `/etc/nginx/nginx.conf`，将第一行 `user www-data;` 改为 `user ubuntu;` (如果您是单用户服务器)。
+
+1.  **修改 Nginx 运行用户**
+    ```bash
+    sudo nano /etc/nginx/nginx.conf
+    # 修改第一行: user ubuntu;
+    ```
+
+2.  **创建站点配置**
+    在 `/etc/nginx/conf.d/` 目录下创建配置文件 (例如 `storybook.conf`)：
+
 
 ```nginx
 server {
@@ -164,10 +201,13 @@ server {
 
     # 后端 API 反向代理
     location /api/ {
-        proxy_pass http://localhost:8080/api/;
+        # 注意: 这里尽量不要带尾随杠，让 Nginx 原样透传路径
+        proxy_pass http://localhost:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        # 增加上传大小限制 (因为我们要上传语音文件)
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # 增加上传大小限制
         client_max_body_size 20M; 
     }
 }

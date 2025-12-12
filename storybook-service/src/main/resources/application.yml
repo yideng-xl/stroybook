@@ -1,5 +1,7 @@
 server:
   port: 8080
+  error:
+    include-message: always
 
 spring:
   application:
@@ -25,5 +27,5 @@ jwt:
 # Application Specific Config
 storybook:
   stories-path: ../stories # Relative to backend/ dir or absolute path
-  n8n-webhook-url: http://localhost:5678/webhook-test/storybook-generate # Placeholder
+  n8n-webhook-url: http://localhost:5678/webhook/storybook-generate # Placeholder
   n8n-redub-webhook-url: http://localhost:5678/webhook-test/storybook-redub # New Webhook for Voice Cloning

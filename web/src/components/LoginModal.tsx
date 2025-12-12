@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import { X } from 'lucide-react';
 
 export const LoginModal: React.FC = () => {
-    const { isLoginModalOpen, closeLoginModal, login } = useAuth();
+    const { isLoginModalOpen, closeLoginModal, login, loginModalMode } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -15,9 +15,9 @@ export const LoginModal: React.FC = () => {
     useEffect(() => {
         if (isLoginModalOpen) {
             setError('');
-            // Optional: reset fields
+            setIsLogin(loginModalMode === 'login');
         }
-    }, [isLoginModalOpen]);
+    }, [isLoginModalOpen, loginModalMode]);
 
     if (!isLoginModalOpen) return null;
 
@@ -61,14 +61,14 @@ export const LoginModal: React.FC = () => {
         } catch (err: any) {
             const errorData = err.response?.data;
             let errorMessage = '操作失败，请检查网络或账号';
-            
+
             if (typeof errorData === 'string') {
                 errorMessage = errorData;
             } else if (errorData && typeof errorData === 'object') {
                 // Handle Spring Boot default error object or custom JSON
                 errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
             }
-            
+
             setError(errorMessage);
         }
     };
@@ -77,7 +77,7 @@ export const LoginModal: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeLoginModal}></div>
-            
+
             {/* Modal Content */}
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md border-4 border-yellow-300 relative z-10 overflow-hidden animate-fade-in-up">
                 <button onClick={closeLoginModal} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
@@ -88,9 +88,9 @@ export const LoginModal: React.FC = () => {
                     <h2 className="text-3xl font-bold text-center mb-6 text-yellow-600">
                         {isLogin ? '欢迎回来' : '加入我们'} 🏰
                     </h2>
-                    
+
                     {error && <div className="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm font-bold">{error}</div>}
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-gray-700 font-bold mb-2">用户名</label>
@@ -113,7 +113,7 @@ export const LoginModal: React.FC = () => {
                                 placeholder={!isLogin ? "8位以上，含大小写/数字/符号之二" : ""}
                             />
                         </div>
-                        
+
                         {!isLogin && (
                             <div>
                                 <label className="block text-gray-700 font-bold mb-2">确认密码</label>

@@ -8,7 +8,7 @@ import { getMyVoices } from '../api/voices';
 
 const CreateStoryPage: React.FC = () => {
     const navigate = useNavigate();
-    const { token } = useAuth();
+    const { token, openLoginModal } = useAuth();
     const { manifest, loading: manifestLoading, error: manifestError } = useStoryManifest();
 
     const [prompt, setPrompt] = useState('');
@@ -36,13 +36,14 @@ const CreateStoryPage: React.FC = () => {
 
     useEffect(() => {
         if (!token) {
-            navigate('/login');
-            alert('请先登录才能创作故事。');
+            // Use global login modal instead of alert/redirect to separate page
+            openLoginModal('login');
+            navigate('/');
         } else {
             // Load user voices
             getMyVoices().then(setUserVoices).catch(err => console.error("Failed to load voices", err));
         }
-    }, [token, navigate]);
+    }, [token, navigate, openLoginModal]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -200,7 +201,7 @@ const CreateStoryPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {error && (
+                    {error && !error.includes('Daily limit reached') && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative" role="alert">
                             <strong className="font-bold">错误! </strong>
                             <span className="block sm:inline">{error}</span>

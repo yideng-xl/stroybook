@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// useState, useEffect removed
+
 import { useQuery } from '@tanstack/react-query'; // Assuming @tanstack/react-query is installed
 import { Story, StoryStatus } from '../types';
 import { api } from '../api/client';
@@ -20,24 +21,10 @@ export function useUserStories({ userId, status, keyword, enabled = true }: UseU
         queryKey: queryKey,
         queryFn: async () => {
             if (!userId) return [];
-            // Backend API: GET /api/stories?status={status}&keyword={keyword}
-            // The backend identifies the user via the Authentication token, so we don't need to pass userId as a param.
-            
-            // Fix: api.stories.list accepts (keyword, status). 
-            // We were passing (keyword, userId, status) which was wrong.
-            const response = await api.stories.list(keyword, status ? status.toString() : undefined);
-            
-            // Important: The backend /api/stories endpoint logic for logged-in users currently returns ALL stories (public + own).
-            // But useUserStories is intended to fetch ONLY the current user's stories.
-            // We need to filter the response here on the client side, 
-            // OR ensure the backend has an endpoint specifically for "my stories".
-            // Given the current backend logic:
-            // if status is provided, it returns stories matching that status for the user.
-            // if status is NOT provided, it returns ALL stories.
-            
-            // Let's filter by userId to be safe, assuming the API returns a mixed list or we want to be sure.
-            const allStories: Story[] = response.data;
-            return allStories.filter(story => story.userId === userId);
+            // Backend API: GET /api/stories?mine=true&keyword={keyword}
+            // Backend uses the authentication token to identify the user.
+            const response = await api.stories.listMy(keyword);
+            return response.data;
         },
         enabled: enabled && !!userId, // Only run if userId is present and enabled is true
         refetchInterval: (data) => {

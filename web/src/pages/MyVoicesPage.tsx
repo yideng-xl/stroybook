@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { UserVoice } from '../types';
 import { getMyVoices, uploadVoice } from '../api/voices';
-import { Mic, Upload, Loader2, Music } from 'lucide-react';
+import { Mic, Upload, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 

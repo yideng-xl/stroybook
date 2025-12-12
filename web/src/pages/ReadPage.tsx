@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useStoryData } from '../hooks/useStoryData';
 import { useStoryManifest } from '../hooks/useStoryManifest';
 import { useMedia } from '../hooks/useMedia';
-import { api } from '../api/client';
-import { useAuth } from '../context/AuthContext';
 import { ReaderControls } from '../components/reader/ReaderControls';
-import { useAudioPlayer } from '../hooks/useAudioPlayer'; // Import hook
+import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { LanguageMode, StoryStyle } from '../types';
+import { api } from '../api/client';
 
 import { FlipBookViewer } from '../components/reader/FlipBookViewer';
 import { ScrollViewer } from '../components/reader/ScrollViewer';
@@ -16,8 +15,6 @@ import { ScrollViewer } from '../components/reader/ScrollViewer';
 const ReadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { openLoginModal } = useAuth();
 
   // 1. Fetch Story Data
   const { story, loading: storyLoading, error: storyError } = useStoryData(id);
@@ -26,7 +23,7 @@ const ReadPage: React.FC = () => {
 
   // 2. Fetch Manifest
   const { manifest } = useStoryManifest();
-  
+
   // 3. State Management
   const [langMode, setLangMode] = useState<LanguageMode>('zh');
   const [currentStyle, setCurrentStyle] = useState<string>('');
@@ -35,17 +32,35 @@ const ReadPage: React.FC = () => {
 
   // Audio Player Hook
   const { isPlaying, play, pause, stop } = useAudioPlayer();
-  
+
   // 4. Responsive Check
   const isDesktop = useMedia('(min-width: 768px)');
 
-  // ... (Timer logic kept same)
+  // Timer Logic
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (!story) return;
+    startTimeRef.current = Date.now();
+
+    return () => {
+      const duration = (Date.now() - startTimeRef.current) / 1000;
+      if (duration > 1) {
+        api.history.record({
+          storyId: story.id,
+          styleName: currentStyle,
+          currentPage: currentPage,
+          durationSeconds: Math.round(duration)
+        }).catch(() => { });
+      }
+    };
+  }, [currentPage, currentStyle, story?.id]);
 
   // Initialize style from URL or default
   useEffect(() => {
     if (story) {
       const urlStyle = searchParams.get('style');
-      
+
       if (urlStyle) {
         setCurrentStyle(urlStyle);
       } else if (story.selectedStyleId) {
@@ -56,11 +71,11 @@ const ReadPage: React.FC = () => {
         // Fallback to manifest default
         const manifestItem = manifest.find(m => m.id === story.id);
         if (manifestItem) {
-            const defaultStyle = manifestItem.defaultStyle || manifestItem.styles[0]?.id;
-            if (defaultStyle) {
-              setCurrentStyle(defaultStyle);
-              setSearchParams({ style: defaultStyle }, { replace: true });
-            }
+          const defaultStyle = manifestItem.defaultStyle || manifestItem.styles[0]?.id;
+          if (defaultStyle) {
+            setCurrentStyle(defaultStyle);
+            setSearchParams({ style: defaultStyle }, { replace: true });
+          }
         }
       }
     }
@@ -84,18 +99,18 @@ const ReadPage: React.FC = () => {
 
   // Render Logic
   const ViewerComponent = isDesktop ? FlipBookViewer : ScrollViewer;
-  
+
   // Final safeguard for styleId passed to viewer
   const viewerStyleId = currentStyle || story.selectedStyleId || '';
 
   return (
-    <Layout>
-      <div className="relative min-h-screen bg-[#5D4037] flex flex-col overflow-hidden" 
-           style={{ 
-             backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20c0-11.05-8.95-20-20-20s-20 8.95-20 20 8.95 20 20 20 20-8.95 20-20zM0 20c0-11.05 8.95-20 20-20s20 8.95 20 20-8.95 20-20 20-20-8.95-20-20z' fill='%236d4c41' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E")` 
-           }}>
-        
-        <ReaderControls 
+    <Layout showHeader={false}>
+      <div className="relative min-h-screen bg-[#5D4037] flex flex-col overflow-hidden"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20c0-11.05-8.95-20-20-20s-20 8.95-20 20 8.95 20 20 20 20-8.95 20-20zM0 20c0-11.05 8.95-20 20-20s20 8.95 20 20-8.95 20-20 20-20-8.95-20-20z' fill='%236d4c41' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E")`
+        }}>
+
+        <ReaderControls
           title={story.titleZh}
           styles={availableStyles}
           currentStyle={viewerStyleId}
@@ -109,29 +124,29 @@ const ReadPage: React.FC = () => {
           }}
           onLangChange={setLangMode}
           onTogglePlay={() => {
-              if (isPlaying) {
-                  pause();
-              } else if (activeAudioUrl) {
-                  play(activeAudioUrl);
-              }
+            if (isPlaying) {
+              pause();
+            } else if (activeAudioUrl) {
+              play(activeAudioUrl);
+            }
           }}
           onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
         />
 
         <div className="flex-1 flex items-center justify-center relative">
-           <ViewerComponent 
-              story={story} 
-              styleId={viewerStyleId} 
-              langMode={langMode}
-              onPageChange={(page) => {
-                  setCurrentPage(page);
-                  stop(); // Stop previous audio
-              }}
-              // Pass audio props to viewer for auto-play logic
-              autoPlay={autoPlay}
-              audioUrl={activeAudioUrl}
-              playAudio={play}
-           />
+          <ViewerComponent
+            story={story}
+            styleId={viewerStyleId}
+            langMode={langMode}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              stop(); // Stop previous audio
+            }}
+            // Pass audio props to viewer for auto-play logic
+            autoPlay={autoPlay}
+            audioUrl={activeAudioUrl}
+            playAudio={play}
+          />
         </div>
 
       </div>

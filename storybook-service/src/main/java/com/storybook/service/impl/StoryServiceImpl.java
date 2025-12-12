@@ -66,6 +66,14 @@ public class StoryServiceImpl implements StoryService {
     }
 
     @Override
+    public List<Story> getUserStories(String userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        return storyRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
     public Optional<Story> getStoryById(String id) {
         return storyRepository.findById(id);
     }

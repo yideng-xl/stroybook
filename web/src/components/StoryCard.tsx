@@ -2,7 +2,7 @@ import React from 'react';
 import { Story } from '../types';
 import { Link } from 'react-router-dom';
 import { getAssetUrl } from '../utils/url';
-import { Play } from 'lucide-react';
+import { Play, User } from 'lucide-react';
 
 interface StoryCardProps {
     story: Story | any; // Using any for compatibility with diverse backend DTOs if needed
@@ -27,6 +27,26 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story }) => {
     const isGenerating = story.status === 'GENERATING';
     const isFailed = story.status === 'FAILED';
 
+    // Style color generator
+    const getStyleColor = (name: string) => {
+        const colors = [
+            'bg-blue-100 text-blue-700',
+            'bg-green-100 text-green-700',
+            'bg-purple-100 text-purple-700',
+            'bg-pink-100 text-pink-700',
+            'bg-yellow-100 text-yellow-800',
+            'bg-indigo-100 text-indigo-700',
+            'bg-red-100 text-red-700',
+            'bg-orange-100 text-orange-800',
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
+    };
+
     return (
         <div className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border-4 border-transparent hover:border-blue-300">
             {/* Cover Image */}
@@ -37,11 +57,17 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story }) => {
                         alt={story.titleZh || story.titleEn}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         loading="lazy"
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/default-cover.png';
+                            e.currentTarget.onerror = null;
+                        }}
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                        <span>暂无封面</span>
-                    </div>
+                    <img
+                        src="/assets/default-cover.png"
+                        alt="Default Cover"
+                        className="w-full h-full object-cover opacity-80"
+                    />
                 )}
 
                 {/* Overlay on hover */}
@@ -74,8 +100,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story }) => {
                 )}
 
                 <div className="flex items-center justify-between text-xs text-gray-400 mt-4">
-                    <span className="bg-gray-100 px-2 py-1 rounded-md text-gray-500">{styleName || '默认风格'}</span>
-                    {/* <span>{story.pageCount ? `${story.pageCount} 页` : ''}</span> */}
+                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${getStyleColor(styleName || '默认')}`}>
+                        {styleName || '默认风格'}
+                    </span>
+                    <div className="flex items-center text-gray-500">
+                        <User size={12} className="mr-1" />
+                        <span>{story.userId || 'Storybook'}</span>
+                    </div>
                 </div>
             </div>
 
