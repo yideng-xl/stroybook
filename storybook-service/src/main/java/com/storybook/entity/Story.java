@@ -3,8 +3,9 @@ package com.storybook.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp; 
-import org.hibernate.annotations.UpdateTimestamp; 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,24 +20,24 @@ public class Story {
 
     @Id
     @Column(nullable = false, unique = true)
-    private String id; 
+    private String id;
 
     private String titleZh;
     private String titleEn;
 
-    private String userId; 
+    private String userId;
 
     @Enumerated(EnumType.STRING)
-    private StoryStatus status; 
-    
-    @Column(length = 1000)
-    private String generationPrompt; 
+    private StoryStatus status;
 
-    private String selectedStyleId; 
-    
+    @Column(length = 1000)
+    private String generationPrompt;
+
+    private String selectedStyleId;
+
     @Column(length = 2000)
-    private String errorMessage; 
-    
+    private String errorMessage;
+
     @Column(length = 2000)
     private String description;
 
@@ -54,11 +55,12 @@ public class Story {
 
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("pageNumber ASC")
+    @JsonIgnore
     private List<StoryPage> pages = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
-    
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

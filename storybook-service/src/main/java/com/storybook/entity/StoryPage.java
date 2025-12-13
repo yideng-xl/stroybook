@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "story_pages")
@@ -18,6 +19,7 @@ public class StoryPage {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "story_id", nullable = false)
     @JsonIgnore
+    @ToString.Exclude
     private Story story;
 
     private Integer pageNumber;
